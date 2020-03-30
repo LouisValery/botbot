@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+
+<launch>
+    <arg name="robot_model" default="burger" doc="model type [burger, waffle, waffle_pi]"/>
+    <arg name="camera_model" default="zed2" doc="model type [zed, zedm, zed2]"/>
+    <arg name="tracking_with_move_base" default="true"/>
+    <arg name="max_robot_speed" default="0.22"/>
+	
+
+	<group>
+		<!-- Start zedbot -->
+		<include file="$(find zedbot_bringup)/launch/start_zedbot.launch" >
+			<arg name="camera_model" value="$(arg camera_model)" />
+			<arg name="base_frame" value="base_footprint"/>
+
+			<arg name="depth_resample_factor"         value="0.2"/>
+    		<arg name="img_resample_factor"           value="1.0"/>
+
+			<arg name="publish_map_odom" value="true"/>  <!-- map to odom -->
+			<arg name="publish_tracking" value="true"/>  <!-- odom to base_frame -->
+			<arg if="$(eval camera_model=='zed2')" name="object_detection_enabled" value="true"/>  <!-- odom to base_frame -->
+			<arg name="robot_model" value="$(arg robot_model)" />
+
+    		<arg name="point_cloud_freq"      value="4.0"/>
+
+		</include>
+
+		<!-- Find target (object detection + send commanda or send goal to move base)-->	
+
+		<include file="$(find zedbot_people_tracking)/launch/include/people_tracking.launch" >
+			<arg name="tracking_with_move_base" value="$(arg tracking_with_move_base)" />
+			<arg name="max_robot_speed" value="$(arg max_robot_speed)" />
+		</include> 	
+
+		<!-- Navigation/ move_base -->
+		<include if="$(arg tracking_with_move_base)" file="$(find zedbot_people_tracking)/launch/include/zedbot_navigation.launch" >
+			<arg name="robot_model" value="$(arg robot_model)" />
+			<arg name="max_robot_speed" value="$(arg max_robot_speed)" />
+		</include>  
+	 
+
+	</group>
+
+</launch>
+

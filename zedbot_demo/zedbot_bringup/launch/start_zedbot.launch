@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+
+<launch>
+    <arg name="robot_model" default="burger" doc="model type [burger, waffle, waffle_pi]"/>
+    <arg name="camera_model" default="zed2" doc="model type [zed, zedm, zed2]"/>
+	
+
+	<arg name="multi_robot_name" default=""/>
+	<arg name="publish_urdf"         default="true" />
+
+	<arg name="base_frame"         default="base_footprint" />
+	<arg name="publish_tracking"   default="true" />
+	<arg name="publish_map_odom"   default="true"/>  <!-- map to odom -->
+
+	<arg if="$(eval camera_model=='zed2')" name="object_detection_enabled" default="false"/>
+
+	<arg name="img_resample_factor"     default="1.0" />
+	<arg name="depth_resample_factor"   default="1.0" />
+
+    <arg name="point_cloud_freq"      default="15"/>
+
+	<group>
+
+		<!-- launch turtlebot (openCR card) -->	
+		<include file="$(find zedbot_bringup)/launch/include/zedbot_core.launch">
+			<arg name="multi_robot_name" value="$(arg multi_robot_name)"/>
+		</include>
+
+		<!-- launch ZED camera -->	
+		<include file="$(find zedbot_bringup)/launch/include/$(arg camera_model).launch">
+			<arg name="base_frame"         value="$(arg base_frame)"/>    
+			<arg name="publish_tracking"   value="$(arg publish_tracking)"/>
+			<arg name="publish_map_odom"   value="$(arg publish_map_odom)"/>
+			
+			<arg name="camera_model" value="$(arg camera_model)"/>
+			<arg name="publish_urdf" value="$(arg publish_urdf)"/>
+			<arg if="$(eval camera_model=='zed2')" name="object_detection_enabled" value="$(arg object_detection_enabled)"/>
+
+			<arg name="img_resample_factor" value="$(arg img_resample_factor)"/>
+			<arg name="depth_resample_factor" value="$(arg depth_resample_factor)"/>
+
+    		<arg name="point_cloud_freq"      value="$(arg point_cloud_freq)"/>
+
+		</include>
+
+
+
+		<!-- robot_description setup-->
+		<arg name="urdf_file" default="$(find xacro)/xacro --inorder '$(find zedbot_description)/urdf/zedbot_$(arg robot_model).urdf.xacro'" />
+		<param name="robot_description" command="$(arg urdf_file)" />
+
+		<!-- robot_state_publisher node -->
+		<node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+			<param name="publish_frequency" type="double" value="50.0" />
+			<param name="tf_prefix" value="$(arg multi_robot_name)"/>
+		</node>
+
+    </group>
+
+
+</launch>

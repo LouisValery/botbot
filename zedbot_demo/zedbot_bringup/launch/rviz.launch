@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+
+<launch>
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find zedbot_bringup)/rviz/zedbot_start_config.rviz" output="screen"/>
+</launch>
