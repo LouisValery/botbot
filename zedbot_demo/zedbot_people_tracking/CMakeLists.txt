@@ -17,9 +17,9 @@ find_package(catkin REQUIRED COMPONENTS
   tf
  )
 
-generate_messages(DEPENDENCIES
-    zed_wrapper
-)
+# generate_messages(DEPENDENCIES
+#     zed_wrapper
+# )
 
 ## Declare a catkin package
 catkin_package()
