@@ -1,6 +1,0 @@
-<?xml version="1.0"?>
-
-<launch>
-	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find zedbot_global_costmap)/rviz/zedbot_global_costmap.rviz" output="screen"/> 
-</launch>
-
