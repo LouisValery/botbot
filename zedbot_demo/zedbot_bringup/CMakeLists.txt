@@ -1,3 +1,5 @@
+
+
 cmake_minimum_required(VERSION 2.8.3)
 project(zedbot_bringup)
 
@@ -16,6 +18,21 @@ find_package(catkin REQUIRED COMPONENTS
 ###################################
 
 catkin_package()
+
+###############################################################################
+# INCLUDES
+
+# Specify locations of header files.
+include_directories(
+        ${catkin_INCLUDE_DIRS}
+        ${CUDA_INCLUDE_DIRS}
+        ${ZED_INCLUDE_DIRS}
+)
+
+link_directories(${ZED_LIBRARY_DIR})
+link_directories(${CUDA_LIBRARY_DIRS})
+
+###############################################################################
 
 ###########
 ## Build ##
