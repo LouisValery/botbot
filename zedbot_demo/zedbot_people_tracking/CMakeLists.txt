@@ -23,6 +23,18 @@ generate_messages(DEPENDENCIES
 
 ## Declare a catkin package
 catkin_package()
+# INCLUDES
+
+# Specify locations of header files.
+include_directories(
+        ${catkin_INCLUDE_DIRS}
+        ${CUDA_INCLUDE_DIRS}
+        ${ZED_INCLUDE_DIRS}
+)
+
+link_directories(${ZED_LIBRARY_DIR})
+link_directories(${CUDA_LIBRARY_DIRS})
+
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 
