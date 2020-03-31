@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+
+<launch>
+ 	 <!-- Arguments -->
+	<arg name="max_robot_speed" default="0.22"/>
+	<arg name="tracking_with_move_base" default="true"/>
+
+
+	<!-- Find target (object detection + send commanda or send goal to move base)-->		
+	<node pkg="zedbot_people_tracking" type="people_tracking"  name="people_tracking"> 
+		<param name="tracking_with_move_base" value="$(arg tracking_with_move_base)" />
+		<param name="min_detection_distance" value=" 0.7"/>
+		<param name="max_detection_distance" value=" 4.0"/>
+		<param name="target_robot_min_dist" value=" 1.0"/>
+		<param name="max_robot_speed" value="$(arg max_robot_speed)"/>
+	</node> 
+</launch>
+
