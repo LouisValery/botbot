@@ -17,9 +17,9 @@ find_package(catkin REQUIRED COMPONENTS
   tf
  )
 
-# generate_messages(DEPENDENCIES
-#     zed_wrapper
-# )
+generate_messages(DEPENDENCIES
+    zed_wrapper
+)
 
 ## Declare a catkin package
 catkin_package()
@@ -42,3 +42,5 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 
 add_executable(people_tracking src/people_tracking.cpp)
 target_link_libraries(people_tracking ${catkin_LIBRARIES})
+
+add_dependencies(zed_obj_det_sub ${catkin_EXPORTED_TARGETS})
