@@ -103,11 +103,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
         <!-- gle settings-->
         <param name="point_cloud_freq"          value="$(arg point_cloud_freq)" />
-        <param name="general/frame_rate"          value="15" />
+        <param name="pub_frame_rate"          value="15" />
         <param name="general/base_frame"          value="$(arg base_frame)" />
         <param name="depth/min_depth"             value="0.5" />
-        <param name="depth/depth_resample_factor" value="$(arg depth_resample_factor)" />
-        <param name="video/img_resample_factor"   value="$(arg img_resample_factor)" />
+        <param name="depth/depth_downsample_factor" value="$(arg depth_resample_factor)" />
+        <param name="video/img_downsample_factor"   value="$(arg img_resample_factor)" />
         
         <param name="pos_tracking/publish_tf"       value="$(arg publish_tracking)" />
         <param name="pos_tracking/publish_map_tf"   value="$(arg publish_map_odom)" />

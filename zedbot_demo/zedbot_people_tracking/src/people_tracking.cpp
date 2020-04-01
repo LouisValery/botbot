@@ -30,9 +30,8 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Pose.h>
 
-#include <zed_wrapper/object_stamped.h>
-#include <zed_wrapper/objects.h>
-#include <zed_wrapper/objects.h>
+#include <zed_interfaces/ObjectStamped.h>
+#include <zed_interfaces/Objects.h>
 
 #include <tf2/LinearMath/Quaternion.h>
 #include <move_base_msgs/MoveBaseAction.h>
@@ -72,7 +71,7 @@ public:
 
 
 
-    void objectListCallback(const zed_wrapper::objects::ConstPtr& msg) {
+    void objectListCallback(const zed_interfaces::Objects::ConstPtr& msg) {
         //info_display(msg);
         if (!m_target_is_chosen){
             ROS_INFO_STREAM( "\n***** chosing target *****");
@@ -83,7 +82,7 @@ public:
         }
     }
 
-    void chose_target(const zed_wrapper::objects::ConstPtr& msg){
+    void chose_target(const zed_interfaces::Objects::ConstPtr& msg){
         double distance_min = 100;
         double distance_from_camera;
         int target_array_index;
@@ -108,7 +107,7 @@ public:
         }
     }
 
-    void define_robot_goal(const zed_wrapper::objects::ConstPtr& msg){
+    void define_robot_goal(const zed_interfaces::Objects::ConstPtr& msg){
 
         double distance_from_camera;
         double alignement_angle;
@@ -171,7 +170,7 @@ public:
             }
         }
     }
-    void track_with_move_base(const zed_wrapper::objects::ConstPtr& msg, int object_index){
+    void track_with_move_base(const zed_interfaces::Objects::ConstPtr& msg, int object_index){
         /*
         * This function uses the person position to send a goal to move base
         * It needs to be sent in map frame, so a transform is necessary
@@ -239,7 +238,7 @@ public:
     }
 
 
-    void info_display(const zed_wrapper::objects::ConstPtr& msg){
+    void info_display(const zed_interfaces::Objects::ConstPtr& msg){
         for(int i=0; i<msg->objects.size();i++){
             if(msg->objects[i].label_id == m_target_is_lost_id)
                 continue;
