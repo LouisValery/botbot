@@ -105,7 +105,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
         <param name="point_cloud_freq"          value="$(arg point_cloud_freq)" />
         <param name="pub_frame_rate"          value="15" />
         <param name="general/base_frame"          value="$(arg base_frame)" />
-        <param name="depth/min_depth"             value="0.5" />
+        <param name="depth/min_depth"             value="0.7" />
         <param name="depth/depth_downsample_factor" value="$(arg depth_resample_factor)" />
         <param name="video/img_downsample_factor"   value="$(arg img_resample_factor)" />
         
