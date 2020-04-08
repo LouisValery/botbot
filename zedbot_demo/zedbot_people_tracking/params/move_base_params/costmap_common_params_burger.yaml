@@ -4,7 +4,7 @@ raytrace_range: 3.5
 #footprint: [[-0.105, -0.105], [-0.105, 0.105], [0.041, 0.105], [0.041, -0.105]]
 robot_radius: 0.105
 
-inflation_radius: 0.3
+inflation_radius: 0.2
 cost_scaling_factor: 10.0
 
 map_type: costmap
@@ -21,4 +21,4 @@ my_obstacle_layer:
     marking: true
     clearing: true
     min_obstacle_height: 0.15
-    max_obstacle_height: 0.8
+    max_obstacle_height: 0.5

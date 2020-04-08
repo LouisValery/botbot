@@ -8,8 +8,8 @@ local_costmap:
 
   static_map: false  
   rolling_window: true
-  width: 3
-  height: 3
+  width: 2
+  height: 2
   origin_x: 0
   origin_y: -1.5
   resolution: 0.15

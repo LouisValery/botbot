@@ -29,6 +29,7 @@
 #include <tf/transform_listener.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Pose.h>
+#include <string>
 
 #include <zed_interfaces/ObjectStamped.h>
 #include <zed_interfaces/Objects.h>
@@ -51,19 +52,23 @@ public:
         m_target_is_chosen = false; 
         m_target_id = -1;
         m_target_is_lost_id = -1;
-	
-	//target choice param
-	m_nh.param("/people_tracking/min_detection_distance", m_min_detection_distance, 0.7);
-	m_nh.param("/people_tracking/max_detection_distance", m_max_detection_distance, 4.0);
+        m_distance_from_camera = -1;
+	    m_current_state = "UNKNOWN";
+        
+        //target choice param
+        m_nh.param("/people_tracking/min_detection_distance", m_min_detection_distance, 0.7);
+        m_nh.param("/people_tracking/max_detection_distance", m_max_detection_distance, 4.0);
 
-	//target tracking param
+        //target tracking param
         m_nh.param("/people_tracking/tracking_with_move_base", m_tracking_with_move_base, true); //default true if param not found
 
-	m_nh.param("/people_tracking/target_robot_min_dist", m_target_robot_min_dist, 1.0);
-	m_nh.param("/people_tracking/max_robot_speed", m_max_robot_speed, 0.22);
+        m_nh.param("/people_tracking/target_robot_min_dist", m_target_robot_min_dist, 1.0);
+        m_nh.param("/people_tracking/max_robot_speed", m_max_robot_speed, 0.22);
+
         m_Kp_speed = 0.3;  
         m_Kp_angle = 2.0;
 
+        m_anglular_tolerance = 0.2; //if alignement <=0.2 rad, no correction (about 12 degree)
         // Subscrber and publisher
         m_subObjList = m_nh.subscribe("/zed/zed_node/obj_det/objects", 1, &PeopleTracking::objectListCallback, this);
         m_cmd_vel_pub = m_nh.advertise<geometry_msgs::Twist>("/cmd_vel", 1000);
@@ -78,24 +83,32 @@ public:
             chose_target(msg);
         }
         else{
+            if (m_current_state == "UNKNOWN"){
+                ROS_INFO_STREAM( "State machine ERROR. UNKNOWN state while target detected");
+            }
             define_robot_goal(msg);
         }
+        state_manager();
     }
 
+
     void chose_target(const zed_interfaces::Objects::ConstPtr& msg){
+        /*
+         *choose future target ID, based on ZED object detection
+         */
         double distance_min = 100;
-        double distance_from_camera;
+        double object_distance_from_camera;
         int target_array_index;
         for(int i=0; i<msg->objects.size();i++)
             {
             if(msg->objects[i].label_id == m_target_is_lost_id)
                 continue;
 
-            distance_from_camera = std::sqrt(std::pow(msg->objects[i].position.x, 2) + std::pow(msg->objects[i].position.y, 2));
+            object_distance_from_camera = std::sqrt(std::pow(msg->objects[i].position.x, 2) + std::pow(msg->objects[i].position.y, 2));
         
             //closest detected person is chosen
-            if (distance_from_camera < distance_min && m_min_detection_distance <= distance_from_camera){
-                distance_min = distance_from_camera;
+            if (object_distance_from_camera < distance_min && m_min_detection_distance <= object_distance_from_camera){
+                distance_min = object_distance_from_camera;
                 target_array_index = i;
             }
         }
@@ -103,13 +116,15 @@ public:
         if (m_min_detection_distance <= distance_min && distance_min <= m_max_detection_distance){
             m_target_id = msg->objects[target_array_index].label_id;
             m_target_is_chosen = true;
-            ROS_INFO_STREAM("Target chosen : " << m_target_id << "  Distance : " << distance_min);
+            m_distance_from_camera = distance_min;
+            ROS_INFO_STREAM("Target chosen : " << m_target_id << "  Distance : " << m_distance_from_camera);
         }
     }
 
     void define_robot_goal(const zed_interfaces::Objects::ConstPtr& msg){
-
-        double distance_from_camera;
+        /*
+         *define current goal and choose between move_base move or custom commands
+         */
         double alignement_angle;
         bool target_still_found = false;
 
@@ -117,29 +132,27 @@ public:
             //person of interest
             if (msg->objects[i].label_id == m_target_id){
                 //tracking_state== 1 : ok , tracking_state== 1 : searching (occlusion occured)
-                if (msg->objects[i].tracking_state== 1 || msg->objects[i].tracking_state== 1){
+                if (msg->objects[i].tracking_state == 1 || msg->objects[i].tracking_state == 1){
                     
                     //compute navigation info
-                    distance_from_camera = std::sqrt(std::pow(msg->objects[i].position.x, 2) + std::pow(msg->objects[i].position.y, 2));
+                    m_distance_from_camera = std::sqrt(std::pow(msg->objects[i].position.x, 2) + std::pow(msg->objects[i].position.y, 2));
                     alignement_angle = atan(msg->objects[i].position.y / msg->objects[i].position.x);
 
-                    ROS_INFO_STREAM("\n\nTarget id : " << m_target_id << "  Distance : " << distance_from_camera << "  Alignement angle: " << alignement_angle);
+                    ROS_INFO_STREAM("\n\nTarget id : " << m_target_id << "  Distance : " << m_distance_from_camera << "  Alignement angle: " << alignement_angle);
 
-                    //if too close
-                    if (distance_from_camera <= m_target_robot_min_dist){
+                    if (m_current_state == "TOO_CLOSE_FROM_TARGET" || m_current_state == "DO_NOT_MOVE"){
                         //robot stop and keep target centered
-                        angular_tracking(distance_from_camera, alignement_angle);
+                        angular_tracking(alignement_angle);
                     }
 
-                    else { //compute goal
+                    else if (m_current_state == "FAR_FROM_TARGET"){
                         ROS_INFO_STREAM("\n ********  Trying to reach target  ***********");
                         if (m_tracking_with_move_base){
                             track_with_move_base(msg, i);
                         }
                         else{
-                            track_with_basic_cmd(distance_from_camera,alignement_angle);
+                            track_with_basic_cmd(alignement_angle);
                         }
- 
                     }
                 }
                 //tracking_state== 0 : off (object not valid) or 3: terminate --> search a new target
@@ -158,13 +171,14 @@ public:
 
                     ROS_INFO("\n**********    Target lost    *************");
                     m_command.linear.x = 0;
-		    m_command.linear.y = 0;
+		            m_command.linear.y = 0;
                     m_command.angular.z = 0;
                     m_cmd_vel_pub.publish(m_command); 
 
                     //find new target when next loop will occure
                     m_target_is_chosen = false;
                     m_target_id = m_target_is_lost_id;
+                    m_distance_from_camera = -1;
 
                 }
             }
@@ -176,16 +190,16 @@ public:
         * It needs to be sent in map frame, so a transform is necessary
         */
 	//wait for move_base server
-	while(!m_action_client.waitForServer(ros::Duration(5.0))){
-	    ROS_INFO_STREAM("Waiting for the move_base action server to come up");
-	}
+        while(!m_action_client.waitForServer(ros::Duration(5.0))){
+            ROS_INFO_STREAM("Waiting for the move_base action server to come up");
+	    }
 
         //goal in robot frame
         geometry_msgs::PoseStamped goal_robot_frame;
         geometry_msgs::PoseStamped goal_map_frame;
         
         goal_robot_frame.header.frame_id = "base_footprint";
-        goal_robot_frame.pose.position.x = 0.80 * msg->objects[object_index].position.x;	//reach nearly target in order to give a free goal on the costmap to move base (target cell is obstacle)		
+        goal_robot_frame.pose.position.x = 0.80 * msg->objects[object_index].position.x;	//nearly reach target in order to give a free goal on the costmap to move base (target cell is obstacle)		
         goal_robot_frame.pose.position.y = 0.80 * msg->objects[object_index].position.y;
 
         tf::Quaternion myQuaternion;
@@ -210,31 +224,44 @@ public:
 
 
 
-    void track_with_basic_cmd(double const &distance_from_camera, double const &alignement_angle){
+    void track_with_basic_cmd(double const &alignement_angle){
         //compute command
         ROS_INFO("trying to reach target");
         m_action_client.cancelAllGoals();
-        m_command.linear.x = m_max_robot_speed * tanh(m_Kp_speed * distance_from_camera); 
+        m_command.linear.x = m_max_robot_speed * tanh(m_Kp_speed * m_distance_from_camera); 
         m_command.linear.y = 0;
         m_command.angular.z = m_Kp_angle * alignement_angle;
 
         m_cmd_vel_pub.publish(m_command);
     }
 
-    void angular_tracking(double const &distance_from_camera, double const &alignement_angle){
-        //compute angular command
-        ROS_INFO("****************    To close from target: rotation only      ***********");
+    void angular_tracking(double const &alignement_angle){
+        /*
+         * To close from target. 
+         * Angular command to keep alignment on target
+         * Negative speed to reach m_target_robot_min_dist distance
+         */
+        ROS_INFO("****************    To close from target: rotation and move back    ***********");
         m_action_client.cancelAllGoals();
-	double buffer = 0.05; // buffer used to avoid useless switch case between "too close" or not, due to noise
-	if (m_target_robot_min_dist - distance_from_camera - buffer > 0)
-        	m_command.linear.x =  - m_max_robot_speed * tanh((m_target_robot_min_dist - distance_from_camera) * 3);
-	else
-		m_command.linear.x = 0; 
-
+        double tolerance = 0.10; // buffer used to avoid useless switch case between "too close" or not, due to noise
+        if (m_target_robot_min_dist - m_distance_from_camera - tolerance > 0){ //robot in range [0, 0.90]
+            m_command.linear.x =  - m_max_robot_speed * tanh((m_target_robot_min_dist - m_distance_from_camera) * 3);
+            m_command.angular.z= m_Kp_angle * alignement_angle;
+        }
+        else{ //robot in range [0.90, 1.10]
+            m_command.linear.x = 0; 
+            if (alignement_angle >= m_anglular_tolerance){
+                m_command.angular.z = m_Kp_angle * alignement_angle;
+            }
+            else{
+                m_command.angular.z = 0;
+            }
+        }
         m_command.linear.y = 0;
-        m_command.angular.z= m_Kp_angle * alignement_angle;
-
+        
+        
         m_cmd_vel_pub.publish(m_command);
+
     }
 
 
@@ -256,7 +283,41 @@ public:
                     << static_cast<int>(msg->objects[i].tracking_state) );
         }
     }
-    
+    bool value_is_in_range(float value, float range_min, float range_max){
+        if (value <= range_max && value > range_min){
+            return true;
+        }
+        return false;
+    }
+
+
+    void state_manager(){
+        double tolerance = 0.10;
+        if (m_distance_from_camera == -1){
+            m_current_state = "UNKNOWN";
+        }
+        else if ((m_distance_from_camera >= m_target_robot_min_dist + tolerance) ||
+                 (value_is_in_range(m_distance_from_camera, m_target_robot_min_dist, m_target_robot_min_dist + tolerance) && m_current_state == "FAR_FROM_TARGET")){ //default >1.10m
+            m_current_state = "FAR_FROM_TARGET";
+        }
+        else if ((value_is_in_range(m_distance_from_camera, m_target_robot_min_dist - tolerance, m_target_robot_min_dist + tolerance) && m_current_state == "DO_NOT_MOVE") ||
+                 (value_is_in_range(m_distance_from_camera, m_target_robot_min_dist - tolerance, m_target_robot_min_dist) && m_current_state == "FAR_FROM_TARGET") ||
+                 (value_is_in_range(m_distance_from_camera, m_target_robot_min_dist, m_target_robot_min_dist + tolerance) && m_current_state == "TOO_CLOSE_FROM_TARGET")||
+                 (value_is_in_range(m_distance_from_camera, m_target_robot_min_dist - tolerance, m_target_robot_min_dist + tolerance) && m_current_state == "UNKNOWN") )
+            m_current_state = "DO_NOT_MOVE";
+
+        else if((m_distance_from_camera <= m_target_robot_min_dist - tolerance) ||
+                (value_is_in_range(m_distance_from_camera, m_target_robot_min_dist - tolerance, m_target_robot_min_dist) && m_current_state == "TOO_CLOSE_FROM_TARGET"))
+            m_current_state = "TOO_CLOSE_FROM_TARGET";
+        else{
+            ROS_INFO_STREAM( "ERROR: UNKNOWN state. Your state machine is broken");
+        }
+
+        ROS_INFO_STREAM("CURRENT STATE : "<< m_current_state);
+    }
+
+
+
 private:
     ros::NodeHandle m_nh;  
     ros::Subscriber m_subObjList;           //subscribe to the object detection topic
@@ -264,17 +325,21 @@ private:
     MoveBaseClient m_action_client;         //send goal to move base
     tf::TransformListener m_tf_listener;    //listen to tf (used to transform goal from robot frame to map frame)
 
+    // robot states based on distance from target
+    std::string m_current_state;
+
     //chose target 
     bool m_target_is_chosen;
     int m_target_id;
     int m_target_is_lost_id;
     double m_min_detection_distance; //in m
     double m_max_detection_distance; //in m
+    double m_distance_from_camera; //in m
 
     //reach target
     move_base_msgs::MoveBaseGoal m_goal;  
     geometry_msgs::Twist m_command;
-
+    double m_anglular_tolerance;
     bool m_tracking_with_move_base;
 
     double m_Kp_angle;              //proportianal coefficient for robot angle relative to target
