@@ -37,6 +37,14 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <actionlib/client/simple_action_client.h>
+
+#include <sl_iot/IoTCloud.hpp>
+
+using namespace std;
+using namespace sl;
+using namespace sl_iot;
+using json = sl_iot::json;
+
 /**
  * Subscriber callbacks. The argument of the callback is a constant pointer to the received message
  */
@@ -48,7 +56,10 @@ class PeopleTracking
 public:
     PeopleTracking() : m_action_client("move_base", true)
     {
-	//target status param
+        //remote control 
+        m_remote_control_enabled = false;
+	    
+        //target status param
         m_target_is_chosen = false; 
         m_target_id = -1;
         m_target_is_lost_id = -1;
@@ -72,23 +83,98 @@ public:
         // Subscrber and publisher
         m_subObjList = m_nh.subscribe("/zed/zed_node/obj_det/objects", 1, &PeopleTracking::objectListCallback, this);
         m_cmd_vel_pub = m_nh.advertise<geometry_msgs::Twist>("/cmd_vel", 1000);
+
+
+        // IOT init
+
+        //Init IoT with the SL_APPLICATION_TOKEN environment variable
+        const char * application_token = ::getenv("SL_APPLICATION_TOKEN");
+        STATUS_CODE status_iot = IoTCloud::init(application_token);
+        if (status_iot != STATUS_CODE::SUCCESS) {
+            std::cout << "Initiliazation error " << status_iot << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
+        CallbackParameters arrow_callback_params;
+        arrow_callback_params.setRemoteCallback("arrow_direction_function", CALLBACK_TYPE::ON_REMOTE_CALL, nullptr);
+        IoTCloud::registerFunction(arrow_cmd_callback, arrow_callback_params);
+
+        CallbackParameters allow_remot_control_callback_params;
+        allow_remot_control_callback_params.setRemoteCallback("remote_control_signal_function", CALLBACK_TYPE::ON_REMOTE_CALL, nullptr);
+        IoTCloud::registerFunction(allow_remote_control_callback, allow_remot_control_callback_params);
+        }
+        
+/////////////////     Remote control callback  //////////////////
+
+    void arrow_cmd_callback(FunctionEvent& event) {
+        //Get the parameters of the remote function call
+        sl_iot::json params = event.getInputParameters();
+        //Check if parameters are present and valid
+        if (params.find("arrow_direction") != params.end() && params["arrow_direction"].is_string()) {
+
+            string arrow_direction = params["arrow_direction"].get<string>();
+
+            IoTCloud::logInfo("Arrow direction : " + arrow_direction );
+
+            //Update the result and status of the event
+            event.status = 0;
+            event.result = arrow_direction;
+        } 
+        else {
+            IoTCloud::logError("Arrow command function was used with wrong arguments.");
+            event.status = 1;
+            event.result = "Arrow command function  was used with wrong arguments.";
+        }
     }
 
 
+    void allow_remote_control_callback(FunctionEvent& event) {
+        //Get the parameters of the remote function call
+        sl_iot::json params = event.getInputParameters();
+        //Check if parameters are present and valid
+        if (params.find("remote_control_signal") != params.end() && params["remote_control_signal"].is_boolean()) {
 
+            bool remote_control_allowed = params["remote_control_signal"].get<bool>();
+
+            IoTCloud::logInfo("Arrow direction : " + remote_control_allowed);
+
+            //Update the result and status of the event
+            event.status = 0;
+            event.result = remote_control_allowed;
+        } 
+        else {
+            IoTCloud::logError("Remote control function was used with wrong arguments.");
+            event.status = 1;
+            event.result = "Remote control function was used with wrong arguments.";
+        }
+    }
+/////////////////////    Autonomous control /////////////////////////
     void objectListCallback(const zed_interfaces::Objects::ConstPtr& msg) {
-        //info_display(msg);
-        if (!m_target_is_chosen){
-            ROS_INFO_STREAM( "\n***** chosing target *****");
-            chose_target(msg);
-        }
-        else{
-            if (m_current_state == "UNKNOWN"){
-                ROS_INFO_STREAM( "State machine ERROR. UNKNOWN state while target detected");
+        /*
+         * If not in remote controle mode
+         * Each time that somebody is detected, 
+         * if target not already chosen, chose it and (if chosen, follow it)  ;
+         * else follow chosen target
+         */
+         
+        if (!m_remote_control_enabled){
+            if (!m_target_is_chosen){
+                ROS_INFO_STREAM( "\n***** chosing target *****");
+                chose_target(msg);
+                state_manager();
+                if (m_target_is_chosen){
+                    follow_target(msg);
+                }
             }
-            define_robot_goal(msg);
+            else{
+                if (m_current_state == "UNKNOWN"){
+                    ROS_INFO_STREAM( "State machine ERROR. UNKNOWN state while target detected");
+                }
+                follow_target(msg);
+            }
+            //redefine current state
+            state_manager();
         }
-        state_manager();
     }
 
 
@@ -121,7 +207,7 @@ public:
         }
     }
 
-    void define_robot_goal(const zed_interfaces::Objects::ConstPtr& msg){
+    void follow_target(const zed_interfaces::Objects::ConstPtr& msg){
         /*
          *define current goal and choose between move_base move or custom commands
          */
@@ -328,6 +414,9 @@ private:
     // robot states based on distance from target
     std::string m_current_state;
 
+    // Remote control
+    bool m_remote_control_enabled;
+
     //chose target 
     bool m_target_is_chosen;
     int m_target_id;
@@ -353,10 +442,18 @@ private:
  */
 int main(int argc, char** argv) {
     ros::init(argc, argv, "zed_target_detection_object_detection");
-
     PeopleTracking PeopleTrackingObject;
-
     ros::spin();
+
+    // ros::Rate loop_rate(10);
+    // while (ros::ok())
+    // {
+    //     if (get_remote_control_enabled()){
+    //         PeopleTrackingObject.
+    //     }
+
+
+    // }
 
     return 0;
 }
