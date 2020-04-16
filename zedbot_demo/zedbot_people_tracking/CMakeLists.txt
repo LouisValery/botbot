@@ -53,3 +53,11 @@ add_executable(people_tracking src/people_tracking.cpp)
 target_link_libraries(people_tracking ${catkin_LIBRARIES})
 
 add_dependencies(people_tracking ${catkin_EXPORTED_TARGETS})
+
+SET(ZED_LIBS_EXT sl_iot ${ZED_LIBRARIES} ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY})
+target_link_libraries(people_tracking
+                        ${SPECIAL_OS_LIBS}
+                        ${ZED_LIBS_EXT}
+                        ${OPENSSL_LIBRARIES} ${UTILS_LIB})
+
+
