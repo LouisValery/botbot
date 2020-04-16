@@ -120,7 +120,7 @@ public:
         PeopleTracking* people_track = (PeopleTracking*) event.payload;
 
         // get current time
-        people_track->m_last_remote_control_request = std::time(0);
+        people_track->m_last_remote_control_request = std::clock();
 
 
         if (params.find("arrow_direction") != params.end() && params["arrow_direction"].is_string()) {
@@ -467,7 +467,7 @@ public:
     }	
 
 
-    std::time_t get_last_remote_control_request() const{
+    std::clock_t get_last_remote_control_request() const{
         return m_last_remote_control_request;
     }	
 
@@ -489,7 +489,7 @@ private:
 /////////////////    Remote control  ////////////////
     // Remote control
     bool m_remote_control_enabled;
-    std::time_t m_last_remote_control_request;
+    std::clock_t m_last_remote_control_request;
 
 
 ////////////////    Automatic people tracking  ///////////////
@@ -539,10 +539,10 @@ int main(int argc, char** argv) {
     {
         if (PeopleTrackingObject.get_remote_control_enabled())
         {
-            std::time_t current_time = std::time(0);
-            std::chrono::duration<double> elapsed_seconds_since_last_command = current_time - PeopleTrackingObject.get_last_remote_control_request();
+            std::clock_t current_time = std::clock();
+            double elapsed_seconds_since_last_command = double(current_time - PeopleTrackingObject.get_last_remote_control_request());
             
-            if (elapsed_seconds_since_last_command.count()>= efficiency_time_of_remote_command)
+            if (elapsed_seconds_since_last_command >= efficiency_time_of_remote_command)
             {
                 cmd_publisher.publish(command); 
             }
