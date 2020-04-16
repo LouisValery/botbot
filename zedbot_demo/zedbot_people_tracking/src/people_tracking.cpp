@@ -37,9 +37,13 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <actionlib/client/simple_action_client.h>
-
+// Sl IOT
 #include <sl_iot/IoTCloud.hpp>
 #include <csignal>
+// time
+#include <iostream>
+#include <chrono>
+#include <ctime> 
 
 using namespace sl_iot;
 using namespace std;
@@ -64,7 +68,7 @@ public:
         m_target_id = -1;
         m_target_is_lost_id = -1;
         m_distance_from_camera = -1;
-	    m_current_state = "UNKNOWN";
+        m_current_state = "UNKNOWN";
         
         //target choice param
         m_nh.param("/people_tracking/min_detection_distance", m_min_detection_distance, 0.7);
@@ -115,11 +119,16 @@ public:
         //Check if parameters are present and valid
         PeopleTracking* people_track = (PeopleTracking*) event.payload;
 
+        // get current time
+        people_track->m_last_remote_control_request = std::chrono::system_clock::now();
+
+
         if (params.find("arrow_direction") != params.end() && params["arrow_direction"].is_string()) {
 
             string arrow_direction = params["arrow_direction"].get<string>();
-            std::cerr << arrow_direction << endl;
+            //std::cerr << arrow_direction << endl;
             IoTCloud::logInfo("Arrow direction : " + arrow_direction );
+
             if (people_track->m_remote_control_enabled){
                 if (arrow_direction == "up"){
                     people_track->m_command.linear.x =  0.05;
@@ -167,23 +176,20 @@ public:
         //Check if parameters are present and valid
         if (params.find("remote_control_signal") != params.end() && params["remote_control_signal"].is_boolean()) {
 
-            bool remote_control_allowed = params["remote_control_signal"].get<bool>();
-            std::cerr << "inside callback  : " << remote_control_allowed << endl;
+            people_track->m_remote_control_enabled = params["remote_control_signal"].get<bool>();
+            std::cerr << "inside callback  : " << people_track->m_remote_control_enabled << endl;
             
-            //Stop all the current actions
-            if (remote_control_allowed){
-                people_track->m_action_client.cancelAllGoals();
-                people_track->m_command.linear.x = 0;
-		        people_track->m_command.linear.y = 0;
-                people_track->m_command.angular.z = 0;
-                people_track->m_cmd_vel_pub.publish(people_track->m_command);
-            }
-
-            people_track->m_remote_control_enabled = remote_control_allowed;
+            //Stop all the current actions (when remote control is unable and when disabled)
+            people_track->m_action_client.cancelAllGoals();
+            people_track->m_command.linear.x = 0;
+            people_track->m_command.linear.y = 0;
+            people_track->m_command.angular.z = 0;
+            people_track->m_cmd_vel_pub.publish(people_track->m_command);
+          
             
             //Update the result and status of the event
             event.status = 0;
-            event.result = remote_control_allowed;
+            event.result = people_track->m_remote_control_enabled;
         } 
         else {
             IoTCloud::logError("Remote control function was used with wrong arguments.");
@@ -304,7 +310,7 @@ public:
 
                     ROS_INFO("\n**********    Target lost    *************");
                     m_command.linear.x = 0;
-		            m_command.linear.y = 0;
+                    m_command.linear.y = 0;
                     m_command.angular.z = 0;
                     m_cmd_vel_pub.publish(m_command); 
 
@@ -447,20 +453,45 @@ public:
         ROS_INFO_STREAM("CURRENT STATE : "<< m_current_state);
     }
 
+/////////////////////////////////////////////////////////////////
+/////////////////////       Accessors       /////////////////////
+/////////////////////////////////////////////////////////////////
+
+
+    bool get_remote_control_enabled() const{
+        return m_remote_control_enabled;
+    }	
+
+
+    auto get_last_remote_control_request() const{
+        return m_last_remote_control_request;
+    }	
+
+
+    ros::Publisher get_cmd_vel_pub() const{
+        return m_cmd_vel_pub;
+    }
 
 
 private:
+
+/////////////////    ROS node  ///////////////
     ros::NodeHandle m_nh;  
     ros::Subscriber m_subObjList;           //subscribe to the object detection topic
-    ros::Publisher m_cmd_vel_pub;           //publish robot's commands on /cmd_vel topic (when move base is not use)
+    ros::Publisher m_cmd_vel_pub;           //publish robot's commands on /cmd_vel topic (when move base is not used)
     MoveBaseClient m_action_client;         //send goal to move base
     tf::TransformListener m_tf_listener;    //listen to tf (used to transform goal from robot frame to map frame)
 
-    // robot states based on distance from target
-    std::string m_current_state;
-
+/////////////////    Remote control  ////////////////
     // Remote control
     bool m_remote_control_enabled;
+    auto m_last_remote_control_request;
+
+
+////////////////    Automatic people tracking  ///////////////
+
+    // robot states based on distance from target
+    std::string m_current_state;
 
     //chose target 
     bool m_target_is_chosen;
@@ -471,11 +502,10 @@ private:
     double m_distance_from_camera; //in m
 
     //reach target
+    bool m_tracking_with_move_base;
     move_base_msgs::MoveBaseGoal m_goal;  
     geometry_msgs::Twist m_command;
     double m_anglular_tolerance;
-    bool m_tracking_with_move_base;
-
     double m_Kp_angle;              //proportianal coefficient for robot angle relative to target
     double m_Kp_speed;              //proportianal coefficient for robot speed
     double m_target_robot_min_dist; //in m, define how close the robot is suppose to follow the target 
@@ -493,13 +523,24 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "zed_target_detection_object_detection");
     PeopleTracking PeopleTrackingObject;
     
-    // ros::Rate loop_rate(10);
-    // while (ros::ok())
-    // {
-    //     if (get_remote_control_enabled()){
-    //         start
-    //     }
-    // }
+    ros::Rate loop_rate(10);
+    float efficiency_time_of_remote_command = 1; //1s
+    geometry_msgs::Twist command;
+    m_command.linear.x = 0;
+    m_command.linear.y = 0;
+    m_command.angular.z = 0;
+    ros::Publisher cmd_publisher =  PeopleTrackingObject.get_cmd_vel_pub();
+
+    while (ros::ok())
+    {
+        if (PeopleTrackingObject.get_remote_control_enabled()){
+            auto current_time = std::chrono::system_clock::now();
+            std::chrono::duration<double> elapsed_seconds_since_last_command = current_time - PeopleTrackingObject.get_last_remote_control_request();
+            if (elapsed_seconds_since_last_command.count()>= efficiency_time_of_remote_command){
+                cmd_publisher.publish(command); 
+            }
+        }
+    }
 
 
     ros::spin();
