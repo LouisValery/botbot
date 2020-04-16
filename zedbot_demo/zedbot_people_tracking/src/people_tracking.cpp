@@ -113,37 +113,38 @@ public:
         //Get the parameters of the remote function call
         sl_iot::json params = event.getInputParameters();
         //Check if parameters are present and valid
+        PeopleTracking* people_track = (PeopleTracking*) event.payload;
+
         if (params.find("arrow_direction") != params.end() && params["arrow_direction"].is_string()) {
 
             string arrow_direction = params["arrow_direction"].get<string>();
-
             IoTCloud::logInfo("Arrow direction : " + arrow_direction );
-            // if (m_remote_control_enabled){
-            //     if (arrow_direction == "up"){
-            //         m_command.linear.x =  0.05;
-            //         m_command.angular.z= 0;
-            //         m_command.linear.y = 0;
-            //         m_cmd_vel_pub.publish(m_command);
-            //     }
-            //     else if (arrow_direction == "down"){
-            //         m_command.linear.x =  -0.05;
-            //         m_command.angular.z= 0;
-            //         m_command.linear.y = 0;
-            //         m_cmd_vel_pub.publish(m_command);
-            //     }
-            //     else if (arrow_direction == "left"){
-            //         m_command.linear.x =  0;
-            //         m_command.angular.z= -0.01;
-            //         m_command.linear.y = 0;
-            //         m_cmd_vel_pub.publish(m_command);
-            //     }
-            //     else if (arrow_direction == "right"){
-            //         m_command.linear.x =  0;
-            //         m_command.angular.z= 0.01;
-            //         m_command.linear.y = 0;
-            //         m_cmd_vel_pub.publish(m_command);
-            //     }
-            // }
+            if (people_track->m_remote_control_enabled){
+                if (arrow_direction == "up"){
+                    people_track->m_command.linear.x =  0.05;
+                    people_track->m_command.angular.z= 0;
+                    people_track->m_command.linear.y = 0;
+                    people_track->m_cmd_vel_pub.publish(people_track->m_command);
+                }
+                else if (arrow_direction == "down"){
+                    people_track->m_command.linear.x =  -0.05;
+                    people_track->m_command.angular.z= 0;
+                    people_track->m_command.linear.y = 0;
+                    people_track->m_cmd_vel_pub.publish(people_track->m_command);
+                }
+                else if (arrow_direction == "left"){
+                    people_track->m_command.linear.x =  0;
+                    people_track->m_command.angular.z= -0.01;
+                    people_track->m_command.linear.y = 0;
+                    people_track->m_cmd_vel_pub.publish(people_track->m_command);
+                }
+                else if (arrow_direction == "right"){
+                    people_track->m_command.linear.x =  0;
+                    people_track->m_command.angular.z= 0.01;
+                    people_track->m_command.linear.y = 0;
+                    people_track->m_cmd_vel_pub.publish(people_track->m_command);
+                }
+            }
             //Update the result and status of the event
             event.status = 0;
             event.result = arrow_direction;
@@ -160,24 +161,25 @@ public:
     static void allow_remote_control_callback(FunctionEvent& event) {
         //Get the parameters of the remote function call
         sl_iot::json params = event.getInputParameters();
-        //Check if parameters are present and valid
         PeopleTracking* people_track = (PeopleTracking*) event.payload;
         
+        //Check if parameters are present and valid
         if (params.find("remote_control_signal") != params.end() && params["remote_control_signal"].is_boolean()) {
 
             bool remote_control_allowed = params["remote_control_signal"].get<bool>();
             std::cerr << "inside callback  : " << remote_control_allowed << endl;
+            
+            //Stop all the current actions
+            if (remote_control_allowed){
+                people_track->m_action_client.cancelAllGoals();
+                people_track->m_command.linear.x = 0;
+		        people_track->m_command.linear.y = 0;
+                people_track->m_command.angular.z = 0;
+                people_track->m_cmd_vel_pub.publish(people_track->m_command);
+            }
 
-            //IoTCloud::logInfo("Remote controle order : " + remote_control_allowed);
             people_track->m_remote_control_enabled = remote_control_allowed;
             
-            if (people_track->m_remote_control_enabled){
-                std::cerr << true  << endl;
-            }
-            else{
-                std::cerr <<  false << endl;
-            }
-
             //Update the result and status of the event
             event.status = 0;
             event.result = remote_control_allowed;
@@ -187,7 +189,6 @@ public:
             event.status = 1;
             event.result = "Remote control function was used with wrong arguments.";
         }
-        std::cerr << "end callback  : " << people_track->m_remote_control_enabled << endl;
     }
 
 /////////////////////////////////////////////////////////////////
@@ -320,7 +321,7 @@ public:
         * This function uses the person position to send a goal to move base
         * It needs to be sent in map frame, so a transform is necessary
         */
-	//wait for move_base server
+	    //wait for move_base server
         while(!m_action_client.waitForServer(ros::Duration(5.0))){
             ROS_INFO_STREAM("Waiting for the move_base action server to come up");
 	    }
