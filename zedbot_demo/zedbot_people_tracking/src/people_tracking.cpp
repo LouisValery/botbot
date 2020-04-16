@@ -101,6 +101,7 @@ public:
         CallbackParameters allow_remot_control_callback_params;
         allow_remot_control_callback_params.setRemoteCallback("remote_control_signal_function", CALLBACK_TYPE::ON_REMOTE_CALL, nullptr);
         IoTCloud::registerFunction(allow_remote_control_callback, allow_remot_control_callback_params);
+	IoTCloud::logInfo("Remote functions initialized");    
         }
         
 /////////////////     Remote control callback  //////////////////
