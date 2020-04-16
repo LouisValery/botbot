@@ -118,6 +118,7 @@ public:
         if (params.find("arrow_direction") != params.end() && params["arrow_direction"].is_string()) {
 
             string arrow_direction = params["arrow_direction"].get<string>();
+            std::cerr << arrow_direction << endl;
             IoTCloud::logInfo("Arrow direction : " + arrow_direction );
             if (people_track->m_remote_control_enabled){
                 if (arrow_direction == "up"){
