@@ -118,32 +118,32 @@ public:
             string arrow_direction = params["arrow_direction"].get<string>();
 
             IoTCloud::logInfo("Arrow direction : " + arrow_direction );
-            if (m_remote_control_enabled){
-                if (arrow_direction == "up"){
-                    m_command.linear.x =  0.05;
-                    m_command.angular.z= 0;
-                    m_command.linear.y = 0;
-                    m_cmd_vel_pub.publish(m_command);
-                }
-                else if (arrow_direction == "down"){
-                    m_command.linear.x =  -0.05;
-                    m_command.angular.z= 0;
-                    m_command.linear.y = 0;
-                    m_cmd_vel_pub.publish(m_command);
-                }
-                else if (arrow_direction == "left"){
-                    m_command.linear.x =  0;
-                    m_command.angular.z= -0.01;
-                    m_command.linear.y = 0;
-                    m_cmd_vel_pub.publish(m_command);
-                }
-                else if (arrow_direction == "right"){
-                    m_command.linear.x =  0;
-                    m_command.angular.z= 0.01;
-                    m_command.linear.y = 0;
-                    m_cmd_vel_pub.publish(m_command);
-                }
-            }
+            // if (m_remote_control_enabled){
+            //     if (arrow_direction == "up"){
+            //         m_command.linear.x =  0.05;
+            //         m_command.angular.z= 0;
+            //         m_command.linear.y = 0;
+            //         m_cmd_vel_pub.publish(m_command);
+            //     }
+            //     else if (arrow_direction == "down"){
+            //         m_command.linear.x =  -0.05;
+            //         m_command.angular.z= 0;
+            //         m_command.linear.y = 0;
+            //         m_cmd_vel_pub.publish(m_command);
+            //     }
+            //     else if (arrow_direction == "left"){
+            //         m_command.linear.x =  0;
+            //         m_command.angular.z= -0.01;
+            //         m_command.linear.y = 0;
+            //         m_cmd_vel_pub.publish(m_command);
+            //     }
+            //     else if (arrow_direction == "right"){
+            //         m_command.linear.x =  0;
+            //         m_command.angular.z= 0.01;
+            //         m_command.linear.y = 0;
+            //         m_cmd_vel_pub.publish(m_command);
+            //     }
+            // }
             //Update the result and status of the event
             event.status = 0;
             event.result = arrow_direction;
@@ -170,12 +170,15 @@ public:
             //Update the result and status of the event
             event.status = 0;
             event.result = remote_control_allowed;
-            // if (remote_control_allowed){
-            //     m_remote_control_enabled = true;
-            // }
-            // else{
-            //     m_remote_control_enabled = false;
-            // }
+
+            PeopleTracking* people_track = (PeopleTracking*) event.payload
+            
+            if (people_track->m_remote_control_enabled){
+                people_track->m_remote_control_enabled = true;
+            }
+            else{
+                people_track->m_remote_control_enabled = false;
+            }
         } 
         else {
             IoTCloud::logError("Remote control function was used with wrong arguments.");
