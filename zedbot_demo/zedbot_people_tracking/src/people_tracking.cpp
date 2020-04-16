@@ -120,7 +120,7 @@ public:
         PeopleTracking* people_track = (PeopleTracking*) event.payload;
 
         // get current time
-        people_track->m_last_remote_control_request = std::chrono::system_clock::now();
+        people_track->m_last_remote_control_request = std::time(0);
 
 
         if (params.find("arrow_direction") != params.end() && params["arrow_direction"].is_string()) {
@@ -299,14 +299,18 @@ public:
 		            ROS_INFO_STREAM("\n ********  Target lost. Reaching last known position  ***********");
                     // target has been lost
                     if (m_tracking_with_move_base){
-		            //reach last known position anyway
-		            m_action_client.waitForResult();
-		            
-		            if(m_action_client.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-		                ROS_INFO("\nLast known position reached");
-		            else
-		                ROS_INFO("\nThe robot failed to reach last known position for some reason");
-		    }
+                        //reach last known position anyway
+                        m_action_client.waitForResult();
+                        
+                        if(m_action_client.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+                        {
+                            ROS_INFO("\nLast known position reached");
+                        }
+                        else
+                        {
+                            ROS_INFO("\nThe robot failed to reach last known position for some reason");
+                        }
+		            }
 
                     ROS_INFO("\n**********    Target lost    *************");
                     m_command.linear.x = 0;
@@ -463,7 +467,7 @@ public:
     }	
 
 
-    auto get_last_remote_control_request() const{
+    std::time_t get_last_remote_control_request() const{
         return m_last_remote_control_request;
     }	
 
@@ -485,7 +489,7 @@ private:
 /////////////////    Remote control  ////////////////
     // Remote control
     bool m_remote_control_enabled;
-    auto m_last_remote_control_request;
+    std::time_t m_last_remote_control_request;
 
 
 ////////////////    Automatic people tracking  ///////////////
@@ -526,17 +530,20 @@ int main(int argc, char** argv) {
     ros::Rate loop_rate(10);
     float efficiency_time_of_remote_command = 1; //1s
     geometry_msgs::Twist command;
-    m_command.linear.x = 0;
-    m_command.linear.y = 0;
-    m_command.angular.z = 0;
+    command.linear.x = 0;
+    command.linear.y = 0;
+    command.angular.z = 0;
     ros::Publisher cmd_publisher =  PeopleTrackingObject.get_cmd_vel_pub();
 
     while (ros::ok())
     {
-        if (PeopleTrackingObject.get_remote_control_enabled()){
-            auto current_time = std::chrono::system_clock::now();
+        if (PeopleTrackingObject.get_remote_control_enabled())
+        {
+            std::time_t current_time = std::time(0);
             std::chrono::duration<double> elapsed_seconds_since_last_command = current_time - PeopleTrackingObject.get_last_remote_control_request();
-            if (elapsed_seconds_since_last_command.count()>= efficiency_time_of_remote_command){
+            
+            if (elapsed_seconds_since_last_command.count()>= efficiency_time_of_remote_command)
+            {
                 cmd_publisher.publish(command); 
             }
         }
