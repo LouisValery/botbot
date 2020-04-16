@@ -94,6 +94,16 @@ public:
             std::cout << "Initiliazation error " << status_iot << std::endl;
             exit(EXIT_FAILURE);
         }    
+
+        CallbackParameters arrow_callback_params;
+        arrow_callback_params.setRemoteCallback("arrow_direction_function", CALLBACK_TYPE::ON_REMOTE_CALL, this);
+        IoTCloud::registerFunction(arrow_cmd_callback, arrow_callback_params);
+
+        CallbackParameters allow_remote_control_callback_params;
+        allow_remote_control_callback_params.setRemoteCallback("remote_control_signal_function", CALLBACK_TYPE::ON_REMOTE_CALL, this);
+        IoTCloud::registerFunction(allow_remote_control_callback, allow_remote_control_callback_params);
+        IoTCloud::logInfo("Remote functions initialized");
+
     }
 /////////////////////////////////////////////////////////////////        
 /////////////////     Remote control callback  //////////////////
@@ -474,15 +484,6 @@ private:
 int main(int argc, char** argv) {
     ros::init(argc, argv, "zed_target_detection_object_detection");
     PeopleTracking PeopleTrackingObject;
-
-    CallbackParameters arrow_callback_params;
-    arrow_callback_params.setRemoteCallback("arrow_direction_function", CALLBACK_TYPE::ON_REMOTE_CALL, this);
-    IoTCloud::registerFunction(PeopleTracking::arrow_cmd_callback, arrow_callback_params);
-
-    CallbackParameters allow_remot_control_callback_params;
-    allow_remot_control_callback_params.setRemoteCallback("remote_control_signal_function", CALLBACK_TYPE::ON_REMOTE_CALL, this);
-    IoTCloud::registerFunction(PeopleTracking::allow_remote_control_callback, allow_remot_control_callback_params);
-    IoTCloud::logInfo("Remote functions initialized");
     
     // ros::Rate loop_rate(10);
     // while (ros::ok())
