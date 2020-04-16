@@ -179,6 +179,7 @@ public:
             else{
                 people_track->m_remote_control_enabled = false;
             }
+            std::cerr << people_track->m_remote_control_enabled << endl;
         } 
         else {
             IoTCloud::logError("Remote control function was used with wrong arguments.");
