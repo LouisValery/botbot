@@ -185,8 +185,8 @@ public:
             IoTCloud::logError("Remote control function was used with wrong arguments.");
             event.status = 1;
             event.result = "Remote control function was used with wrong arguments.";
-            std::cerr << "end callback  : " << people_track->m_remote_control_enabled << endl;
         }
+        std::cerr << "end callback  : " << people_track->m_remote_control_enabled << endl;
     }
 
 /////////////////////////////////////////////////////////////////
