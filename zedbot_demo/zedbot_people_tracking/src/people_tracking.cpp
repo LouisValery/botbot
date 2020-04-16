@@ -169,17 +169,18 @@ public:
             std::cerr << "inside callback  : " << remote_control_allowed << endl;
 
             //IoTCloud::logInfo("Remote controle order : " + remote_control_allowed);
+            people_track->m_remote_control_enabled = true;
+            
+            if (people_track->m_remote_control_enabled){
+                std::cerr << true  << endl;
+            }
+            else{
+                std::cerr <<  false << endl;
+            }
 
             //Update the result and status of the event
             event.status = 0;
             event.result = remote_control_allowed;
-
-            if (people_track->m_remote_control_enabled){
-                std::cerr << true;
-            }
-            else{
-                std::cerr <<  false;
-            }
         } 
         else {
             IoTCloud::logError("Remote control function was used with wrong arguments.");
