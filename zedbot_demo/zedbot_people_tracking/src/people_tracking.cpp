@@ -99,7 +99,7 @@ public:
 /////////////////     Remote control callback  //////////////////
 /////////////////////////////////////////////////////////////////
 
-    void arrow_cmd_callback(FunctionEvent& event) {
+    static void arrow_cmd_callback(FunctionEvent& event) {
         //Get the parameters of the remote function call
         sl_iot::json params = event.getInputParameters();
         //Check if parameters are present and valid
@@ -147,7 +147,7 @@ public:
     }
 
 
-    void allow_remote_control_callback(FunctionEvent& event) {
+    static void allow_remote_control_callback(FunctionEvent& event) {
         //Get the parameters of the remote function call
         sl_iot::json params = event.getInputParameters();
         //Check if parameters are present and valid
