@@ -42,6 +42,7 @@
 #include <csignal>
 
 using namespace sl_iot;
+using namespace std;
 using json = sl_iot::json;
 
 /**
@@ -96,11 +97,11 @@ public:
 
         CallbackParameters arrow_callback_params;
         arrow_callback_params.setRemoteCallback("arrow_direction_function", CALLBACK_TYPE::ON_REMOTE_CALL, nullptr);
-        IoTCloud::registerFunction(arrow_cmd_callback, arrow_callback_params);
+        IoTCloud::registerFunction(PeopleTracking::arrow_cmd_callback, arrow_callback_params);
 
         CallbackParameters allow_remot_control_callback_params;
         allow_remot_control_callback_params.setRemoteCallback("remote_control_signal_function", CALLBACK_TYPE::ON_REMOTE_CALL, nullptr);
-        IoTCloud::registerFunction(allow_remote_control_callback, allow_remot_control_callback_params);
+        IoTCloud::registerFunction(PeopleTracking::allow_remote_control_callback, allow_remot_control_callback_params);
 	IoTCloud::logInfo("Remote functions initialized");    
         }
         

@@ -21,6 +21,7 @@ find_package(ZED 3 REQUIRED)
 find_package(CUDA REQUIRED)
 find_package(OpenSSL REQUIRED)
 
+
 if(WIN32)
     SET(SL_IOT_BIN_DIR "$ENV{ZED_SDK_ROOT_DIR}/bin")
     SET(SL_IOT_LIB_DIR "$ENV{ZED_SDK_ROOT_DIR}/lib")
