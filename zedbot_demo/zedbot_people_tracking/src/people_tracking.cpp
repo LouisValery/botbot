@@ -164,8 +164,9 @@ public:
         if (params.find("remote_control_signal") != params.end() && params["remote_control_signal"].is_boolean()) {
 
             bool remote_control_allowed = params["remote_control_signal"].get<bool>();
+            std::cerr << "inside callback  : " << remote_control_allowed << endl;
 
-            IoTCloud::logInfo("Arrow direction : " + remote_control_allowed);
+            //IoTCloud::logInfo("Remote controle order : " + remote_control_allowed);
 
             //Update the result and status of the event
             event.status = 0;
@@ -174,17 +175,17 @@ public:
             PeopleTracking* people_track = (PeopleTracking*) event.payload;
             
             if (people_track->m_remote_control_enabled){
-                people_track->m_remote_control_enabled = true;
+                std::cerr << true;
             }
             else{
-                people_track->m_remote_control_enabled = false;
+                std::cerr <<  false;
             }
-            std::cerr << "inside callback  : " << people_track->m_remote_control_enabled << endl;
         } 
         else {
             IoTCloud::logError("Remote control function was used with wrong arguments.");
             event.status = 1;
             event.result = "Remote control function was used with wrong arguments.";
+            std::cerr << "end callback  : " << people_track->m_remote_control_enabled << endl;
         }
     }
 
