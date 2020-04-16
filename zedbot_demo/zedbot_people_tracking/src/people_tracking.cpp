@@ -169,7 +169,7 @@ public:
             std::cerr << "inside callback  : " << remote_control_allowed << endl;
 
             //IoTCloud::logInfo("Remote controle order : " + remote_control_allowed);
-            people_track->m_remote_control_enabled = true;
+            people_track->m_remote_control_enabled = remote_control_allowed;
             
             if (people_track->m_remote_control_enabled){
                 std::cerr << true  << endl;
