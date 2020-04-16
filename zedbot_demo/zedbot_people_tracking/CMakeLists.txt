@@ -17,6 +17,17 @@ find_package(catkin REQUIRED COMPONENTS
   tf
  )
 
+if(WIN32)
+    SET(SL_IOT_BIN_DIR "$ENV{ZED_SDK_ROOT_DIR}/bin")
+    SET(SL_IOT_LIB_DIR "$ENV{ZED_SDK_ROOT_DIR}/lib")
+    SET(SL_IOT_INCLUDE_DIR "$ENV{ZED_SDK_ROOT_DIR}/include")
+else(WIN32)
+    SET(SPECIAL_OS_LIBS "pthread" "X11")
+    add_definitions(-Wno-write-strings)
+    SET(SL_IOT_LIB_DIR /usr/local/sl_iot/lib/)
+    SET(SL_IOT_INCLUDE_DIR /usr/local/sl_iot/include/)
+    SET(UTILS_LIB pthread util curl dl)
+endif(WIN32)
 
 ## Declare a catkin package
 catkin_package()
@@ -27,11 +38,12 @@ include_directories(
         ${catkin_INCLUDE_DIRS}
         ${CUDA_INCLUDE_DIRS}
         ${ZED_INCLUDE_DIRS}
+        ${SL_IOT_INCLUDE_DIR}
 )
 
 link_directories(${ZED_LIBRARY_DIR})
 link_directories(${CUDA_LIBRARY_DIRS})
-
+link_directories(${SL_IOT_LIB_DIR})
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 

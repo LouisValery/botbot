@@ -39,9 +39,8 @@
 #include <actionlib/client/simple_action_client.h>
 
 #include <sl_iot/IoTCloud.hpp>
+#include <csignal>
 
-using namespace std;
-using namespace sl;
 using namespace sl_iot;
 using json = sl_iot::json;
 
