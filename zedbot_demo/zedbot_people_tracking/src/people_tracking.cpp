@@ -198,7 +198,7 @@ public:
          * if target not already chosen, chose it and (if chosen, follow it)  ;
          * else follow chosen target
          */
-         
+        std::cerr << m_remote_control_enabled << endl;
         if (!m_remote_control_enabled){
             if (!m_target_is_chosen){
                 ROS_INFO_STREAM( "\n***** chosing target *****");
