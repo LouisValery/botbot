@@ -95,9 +95,89 @@ public:
             exit(EXIT_FAILURE);
         }    
     }
-        
+/////////////////////////////////////////////////////////////////        
+/////////////////     Remote control callback  //////////////////
+/////////////////////////////////////////////////////////////////
 
-/////////////////////    Autonomous control /////////////////////////
+    void arrow_cmd_callback(FunctionEvent& event) {
+        //Get the parameters of the remote function call
+        sl_iot::json params = event.getInputParameters();
+        //Check if parameters are present and valid
+        if (params.find("arrow_direction") != params.end() && params["arrow_direction"].is_string()) {
+
+            string arrow_direction = params["arrow_direction"].get<string>();
+
+            IoTCloud::logInfo("Arrow direction : " + arrow_direction );
+            // if (m_remote_control_enabled){
+            //     if (arrow_direction == "up"){
+            //         m_command.linear.x =  0.05;
+            //         m_command.angular.z= 0;
+            //         m_command.linear.y = 0;
+            //         m_cmd_vel_pub.publish(m_command);
+            //     }
+            //     else if (arrow_direction == "down"){
+            //         m_command.linear.x =  -0.05;
+            //         m_command.angular.z= 0;
+            //         m_command.linear.y = 0;
+            //         m_cmd_vel_pub.publish(m_command);
+            //     }
+            //     else if (arrow_direction == "left"){
+            //         m_command.linear.x =  0;
+            //         m_command.angular.z= -0.01;
+            //         m_command.linear.y = 0;
+            //         m_cmd_vel_pub.publish(m_command);
+            //     }
+            //     else if (arrow_direction == "right"){
+            //         m_command.linear.x =  0;
+            //         m_command.angular.z= 0.01;
+            //         m_command.linear.y = 0;
+            //         m_cmd_vel_pub.publish(m_command);
+            //     }
+            // }
+            //Update the result and status of the event
+            event.status = 0;
+            event.result = arrow_direction;
+        } 
+
+        else {
+            IoTCloud::logError("Arrow command function was used with wrong arguments.");
+            event.status = 1;
+            event.result = "Arrow command function  was used with wrong arguments.";
+        }
+    }
+
+
+    void allow_remote_control_callback(FunctionEvent& event) {
+        //Get the parameters of the remote function call
+        sl_iot::json params = event.getInputParameters();
+        //Check if parameters are present and valid
+        if (params.find("remote_control_signal") != params.end() && params["remote_control_signal"].is_boolean()) {
+
+            bool remote_control_allowed = params["remote_control_signal"].get<bool>();
+
+            IoTCloud::logInfo("Arrow direction : " + remote_control_allowed);
+
+            //Update the result and status of the event
+            event.status = 0;
+            event.result = remote_control_allowed;
+            // if (remote_control_allowed){
+            //     m_remote_control_enabled = true;
+            // }
+            // else{
+            //     m_remote_control_enabled = false;
+            // }
+        } 
+        else {
+            IoTCloud::logError("Remote control function was used with wrong arguments.");
+            event.status = 1;
+            event.result = "Remote control function was used with wrong arguments.";
+        }
+    }
+
+/////////////////////////////////////////////////////////////////
+/////////////////////    Autonomous control /////////////////////
+/////////////////////////////////////////////////////////////////
+
     void objectListCallback(const zed_interfaces::Objects::ConstPtr& msg) {
         /*
          * If not in remote controle mode
@@ -293,8 +373,6 @@ public:
             }
         }
         m_command.linear.y = 0;
-        
-        
         m_cmd_vel_pub.publish(m_command);
 
     }
@@ -387,50 +465,7 @@ private:
 };
 
 
-/////////////////     Remote control callback  //////////////////
 
-    void arrow_cmd_callback(FunctionEvent& event) {
-        //Get the parameters of the remote function call
-        sl_iot::json params = event.getInputParameters();
-        //Check if parameters are present and valid
-        if (params.find("arrow_direction") != params.end() && params["arrow_direction"].is_string()) {
-
-            string arrow_direction = params["arrow_direction"].get<string>();
-
-            IoTCloud::logInfo("Arrow direction : " + arrow_direction );
-
-            //Update the result and status of the event
-            event.status = 0;
-            event.result = arrow_direction;
-        } 
-        else {
-            IoTCloud::logError("Arrow command function was used with wrong arguments.");
-            event.status = 1;
-            event.result = "Arrow command function  was used with wrong arguments.";
-        }
-    }
-
-
-    void allow_remote_control_callback(FunctionEvent& event) {
-        //Get the parameters of the remote function call
-        sl_iot::json params = event.getInputParameters();
-        //Check if parameters are present and valid
-        if (params.find("remote_control_signal") != params.end() && params["remote_control_signal"].is_boolean()) {
-
-            bool remote_control_allowed = params["remote_control_signal"].get<bool>();
-
-            IoTCloud::logInfo("Arrow direction : " + remote_control_allowed);
-
-            //Update the result and status of the event
-            event.status = 0;
-            event.result = remote_control_allowed;
-        } 
-        else {
-            IoTCloud::logError("Remote control function was used with wrong arguments.");
-            event.status = 1;
-            event.result = "Remote control function was used with wrong arguments.";
-        }
-    }
 
 
 /*
@@ -442,22 +477,22 @@ int main(int argc, char** argv) {
 
     CallbackParameters arrow_callback_params;
     arrow_callback_params.setRemoteCallback("arrow_direction_function", CALLBACK_TYPE::ON_REMOTE_CALL, nullptr);
-    IoTCloud::registerFunction(arrow_cmd_callback, arrow_callback_params);
+    IoTCloud::registerFunction(PeopleTracking::arrow_cmd_callback, arrow_callback_params);
 
     CallbackParameters allow_remot_control_callback_params;
     allow_remot_control_callback_params.setRemoteCallback("remote_control_signal_function", CALLBACK_TYPE::ON_REMOTE_CALL, nullptr);
-    IoTCloud::registerFunction(allow_remote_control_callback, allow_remot_control_callback_params);
+    IoTCloud::registerFunction(PeopleTracking::allow_remote_control_callback, allow_remot_control_callback_params);
     IoTCloud::logInfo("Remote functions initialized");
     
     // ros::Rate loop_rate(10);
     // while (ros::ok())
     // {
     //     if (get_remote_control_enabled()){
-    //         PeopleTrackingObject.
+    //         start
     //     }
-
-
     // }
+
+
     ros::spin();
     return 0;
 }
