@@ -439,7 +439,6 @@ private:
 int main(int argc, char** argv) {
     ros::init(argc, argv, "zed_target_detection_object_detection");
     PeopleTracking PeopleTrackingObject;
-    ros::spin();
 
     CallbackParameters arrow_callback_params;
     arrow_callback_params.setRemoteCallback("arrow_direction_function", CALLBACK_TYPE::ON_REMOTE_CALL, nullptr);
@@ -459,6 +458,6 @@ int main(int argc, char** argv) {
 
 
     // }
-
+    ros::spin();
     return 0;
 }
