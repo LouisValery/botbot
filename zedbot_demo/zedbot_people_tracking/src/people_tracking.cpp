@@ -171,7 +171,7 @@ public:
             event.status = 0;
             event.result = remote_control_allowed;
 
-            PeopleTracking* people_track = (PeopleTracking*) event.payload
+            PeopleTracking* people_track = (PeopleTracking*) event.payload;
             
             if (people_track->m_remote_control_enabled){
                 people_track->m_remote_control_enabled = true;
