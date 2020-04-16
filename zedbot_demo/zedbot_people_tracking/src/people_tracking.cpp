@@ -161,6 +161,8 @@ public:
         //Get the parameters of the remote function call
         sl_iot::json params = event.getInputParameters();
         //Check if parameters are present and valid
+        PeopleTracking* people_track = (PeopleTracking*) event.payload;
+        
         if (params.find("remote_control_signal") != params.end() && params["remote_control_signal"].is_boolean()) {
 
             bool remote_control_allowed = params["remote_control_signal"].get<bool>();
@@ -172,8 +174,6 @@ public:
             event.status = 0;
             event.result = remote_control_allowed;
 
-            PeopleTracking* people_track = (PeopleTracking*) event.payload;
-            
             if (people_track->m_remote_control_enabled){
                 std::cerr << true;
             }
