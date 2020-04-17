@@ -144,13 +144,13 @@ public:
                 }
                 else if (arrow_direction == "left"){
                     people_track->m_command.linear.x =  0;
-                    people_track->m_command.angular.z= -0.01;
+                    people_track->m_command.angular.z= -0.2;
                     people_track->m_command.linear.y = 0;
                     people_track->m_cmd_vel_pub.publish(people_track->m_command);
                 }
                 else if (arrow_direction == "right"){
                     people_track->m_command.linear.x =  0;
-                    people_track->m_command.angular.z= 0.01;
+                    people_track->m_command.angular.z= 0.2;
                     people_track->m_command.linear.y = 0;
                     people_track->m_cmd_vel_pub.publish(people_track->m_command);
                 }
@@ -527,13 +527,13 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "zed_target_detection_object_detection");
     PeopleTracking PeopleTrackingObject;
     
-    // ros::Rate loop_rate(10);
-    // float efficiency_time_of_remote_command = 1; //1s
-    // geometry_msgs::Twist command;
-    // command.linear.x = 0;
-    // command.linear.y = 0;
-    // command.angular.z = 0;
-    // ros::Publisher cmd_publisher =  PeopleTrackingObject.get_cmd_vel_pub();
+    ros::Rate loop_rate(10);
+    float efficiency_time_of_remote_command = 1; //1s
+    geometry_msgs::Twist command;
+    command.linear.x = 0;
+    command.linear.y = 0;
+    command.angular.z = 0;
+    ros::Publisher cmd_publisher =  PeopleTrackingObject.get_cmd_vel_pub();
 
     // while (ros::ok())
     // {
