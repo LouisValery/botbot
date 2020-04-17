@@ -538,16 +538,16 @@ int main(int argc, char** argv) {
     int count = 0;
     while (ros::ok())
     {
-    //     if (PeopleTrackingObject.get_remote_control_enabled())
-    //     {
-    //         std::clock_t current_time = std::clock();
-    //         double elapsed_seconds_since_last_command = double(current_time - PeopleTrackingObject.get_last_remote_control_request());
+        if (PeopleTrackingObject.get_remote_control_enabled())
+        {
+            std::clock_t current_time = std::clock();
+            double elapsed_seconds_since_last_command = double(current_time - PeopleTrackingObject.get_last_remote_control_request());
             
-    //         if (elapsed_seconds_since_last_command >= efficiency_time_of_remote_command)
-    //         {
-    //             cmd_publisher.publish(command); 
-    //         }
-    //     }
+            if (elapsed_seconds_since_last_command >= efficiency_time_of_remote_command)
+            {
+                cmd_publisher.publish(command); 
+            }
+        }
         ros::spinOnce();
         loop_rate.sleep();
     }
