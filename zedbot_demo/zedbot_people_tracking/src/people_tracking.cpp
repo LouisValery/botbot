@@ -527,7 +527,7 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "zed_target_detection_object_detection");
     PeopleTracking PeopleTrackingObject;
     
-    ros::Rate loop_rate(10);
+    ros::Rate loop_rate(2);
     float efficiency_time_of_remote_command = 1; //1s
     geometry_msgs::Twist command;
     command.linear.x = 0;
@@ -538,13 +538,17 @@ int main(int argc, char** argv) {
     int count = 0;
     while (ros::ok())
     {
+        std::cerr << "enter while loop" << endl;
         if (PeopleTrackingObject.get_remote_control_enabled())
         {
+            std::cerr << "remote control enabled" << endl;
+
             std::clock_t current_time = std::clock();
-            double elapsed_seconds_since_last_command = double(current_time - PeopleTrackingObject.get_last_remote_control_request());
-            
+            float elapsed_seconds_since_last_command = double(current_time - PeopleTrackingObject.get_last_remote_control_request());
+            std::cerr << "elapsed time : " << elapsed_seconds_since_last_command  << endl;
             if (elapsed_seconds_since_last_command >= efficiency_time_of_remote_command)
             {
+                std::cerr << "remote control enabled" << endl;
                 cmd_publisher.publish(command); 
             }
         }
