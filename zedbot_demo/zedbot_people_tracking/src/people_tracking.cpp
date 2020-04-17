@@ -534,7 +534,8 @@ int main(int argc, char** argv) {
     command.linear.y = 0;
     command.angular.z = 0;
     ros::Publisher cmd_publisher =  PeopleTrackingObject.get_cmd_vel_pub();
-
+    
+    int count = 0;
     while (ros::ok())
     {
     //     if (PeopleTrackingObject.get_remote_control_enabled())
@@ -547,6 +548,8 @@ int main(int argc, char** argv) {
     //             cmd_publisher.publish(command); 
     //         }
     //     }
+        ros::spinOnce();
+        loop_rate.sleep();
     }
 
 
