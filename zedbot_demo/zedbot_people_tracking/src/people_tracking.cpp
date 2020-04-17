@@ -535,8 +535,8 @@ int main(int argc, char** argv) {
     command.angular.z = 0;
     ros::Publisher cmd_publisher =  PeopleTrackingObject.get_cmd_vel_pub();
 
-    // while (ros::ok())
-    // {
+    while (ros::ok())
+    {
     //     if (PeopleTrackingObject.get_remote_control_enabled())
     //     {
     //         std::clock_t current_time = std::clock();
@@ -547,7 +547,7 @@ int main(int argc, char** argv) {
     //             cmd_publisher.publish(command); 
     //         }
     //     }
-    // }
+    }
 
 
     ros::spin();
