@@ -527,27 +527,27 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "zed_target_detection_object_detection");
     PeopleTracking PeopleTrackingObject;
     
-    ros::Rate loop_rate(10);
-    float efficiency_time_of_remote_command = 1; //1s
-    geometry_msgs::Twist command;
-    command.linear.x = 0;
-    command.linear.y = 0;
-    command.angular.z = 0;
-    ros::Publisher cmd_publisher =  PeopleTrackingObject.get_cmd_vel_pub();
+    // ros::Rate loop_rate(10);
+    // float efficiency_time_of_remote_command = 1; //1s
+    // geometry_msgs::Twist command;
+    // command.linear.x = 0;
+    // command.linear.y = 0;
+    // command.angular.z = 0;
+    // ros::Publisher cmd_publisher =  PeopleTrackingObject.get_cmd_vel_pub();
 
-    while (ros::ok())
-    {
-        if (PeopleTrackingObject.get_remote_control_enabled())
-        {
-            std::clock_t current_time = std::clock();
-            double elapsed_seconds_since_last_command = double(current_time - PeopleTrackingObject.get_last_remote_control_request());
+    // while (ros::ok())
+    // {
+    //     if (PeopleTrackingObject.get_remote_control_enabled())
+    //     {
+    //         std::clock_t current_time = std::clock();
+    //         double elapsed_seconds_since_last_command = double(current_time - PeopleTrackingObject.get_last_remote_control_request());
             
-            if (elapsed_seconds_since_last_command >= efficiency_time_of_remote_command)
-            {
-                cmd_publisher.publish(command); 
-            }
-        }
-    }
+    //         if (elapsed_seconds_since_last_command >= efficiency_time_of_remote_command)
+    //         {
+    //             cmd_publisher.publish(command); 
+    //         }
+    //     }
+    // }
 
 
     ros::spin();
