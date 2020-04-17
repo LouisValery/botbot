@@ -544,7 +544,7 @@ int main(int argc, char** argv) {
             std::cerr << "remote control enabled" << endl;
 
             std::clock_t current_time = std::clock();
-            float elapsed_seconds_since_last_command = double(current_time - PeopleTrackingObject.get_last_remote_control_request());
+            float elapsed_seconds_since_last_command = double(current_time - PeopleTrackingObject.get_last_remote_control_request())/CLOCKS_PER_SEC;
             std::cerr << "elapsed time : " << elapsed_seconds_since_last_command  << endl;
             if (elapsed_seconds_since_last_command >= efficiency_time_of_remote_command)
             {
