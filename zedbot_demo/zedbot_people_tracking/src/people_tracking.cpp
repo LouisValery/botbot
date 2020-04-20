@@ -107,8 +107,8 @@ public:
         allow_remote_control_callback_params.setRemoteCallback("remote_control_signal_function", CALLBACK_TYPE::ON_REMOTE_CALL, this);
         IoTCloud::registerFunction(allow_remote_control_callback, allow_remote_control_callback_params);
         IoTCloud::logInfo("Remote functions initialized");
-
     }
+    
 /////////////////////////////////////////////////////////////////        
 /////////////////     Remote control callback  //////////////////
 /////////////////////////////////////////////////////////////////
@@ -132,28 +132,39 @@ public:
             if (people_track->m_remote_control_enabled){
                 if (arrow_direction == "up"){
                     people_track->m_command.linear.x =  0.05;
-                    people_track->m_command.angular.z= 0;
-                    people_track->m_command.linear.y = 0;
-                    people_track->m_cmd_vel_pub.publish(people_track->m_command);
+                    people_track->m_command.angular.z = 0;
                 }
                 else if (arrow_direction == "down"){
-                    people_track->m_command.linear.x =  -0.05;
-                    people_track->m_command.angular.z= 0;
-                    people_track->m_command.linear.y = 0;
-                    people_track->m_cmd_vel_pub.publish(people_track->m_command);
+                    people_track->m_command.linear.x =  - 0.05;
+                    people_track->m_command.angular.z = 0;
                 }
                 else if (arrow_direction == "left"){
                     people_track->m_command.linear.x =  0;
-                    people_track->m_command.angular.z= -0.2;
-                    people_track->m_command.linear.y = 0;
-                    people_track->m_cmd_vel_pub.publish(people_track->m_command);
+                    people_track->m_command.angular.z = - 0.2;
                 }
                 else if (arrow_direction == "right"){
                     people_track->m_command.linear.x =  0;
-                    people_track->m_command.angular.z= 0.2;
-                    people_track->m_command.linear.y = 0;
-                    people_track->m_cmd_vel_pub.publish(people_track->m_command);
+                    people_track->m_command.angular.z = 0.2;
                 }
+                else if (arrow_direction == "up_right"){
+                    people_track->m_command.linear.x =  0.05;
+                    people_track->m_command.angular.z = 0.2;
+                }
+                else if (arrow_direction == "up_left"){
+                    people_track->m_command.linear.x = 0.05;
+                    people_track->m_command.angular.z = - 0.2;
+                }
+                else if (arrow_direction == "down_right"){
+                    people_track->m_command.linear.x =  - 0.05;
+                    people_track->m_command.angular.z = 0.2;
+                }
+                else if (arrow_direction == "down_right"){
+                    people_track->m_command.linear.x = - 0.05;
+                    people_track->m_command.angular.z = - 0.2;
+                }
+
+            people_track->m_command.linear.y = 0;
+            people_track->m_cmd_vel_pub.publish(people_track->m_command);
             }
             //Update the result and status of the event
             event.status = 0;
@@ -546,9 +557,9 @@ int main(int argc, char** argv) {
             std::clock_t current_time = std::clock();
             float elapsed_seconds_since_last_command = double(current_time - PeopleTrackingObject.get_last_remote_control_request())/CLOCKS_PER_SEC;
             std::cerr << "elapsed time : " << elapsed_seconds_since_last_command  << endl;
-            if (elapsed_seconds_since_last_command >= efficiency_time_of_remote_command)
+            if (elapsed_seconds_since_last_command >= efficiency_time_of_remote_command / 10)
             {
-                std::cerr << "remote control enabled" << endl;
+                std::cerr << "stop robot" << endl;
                 cmd_publisher.publish(command); 
             }
         }
