@@ -14,7 +14,7 @@ local_costmap:
   origin_y: -1.5
   resolution: 0.15
   
-  inflation_radius: 0.4
+  inflation_radius: 0.2
   cost_scaling_factor: 10.0
 
   plugins:

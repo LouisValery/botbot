@@ -140,27 +140,26 @@ public:
                 }
                 else if (arrow_direction == "left"){
                     people_track->m_command.linear.x =  0;
-                    people_track->m_command.angular.z = - 0.2;
+                    people_track->m_command.angular.z = 0.2;
                 }
                 else if (arrow_direction == "right"){
                     people_track->m_command.linear.x =  0;
-                    people_track->m_command.angular.z = 0.2;
+                    people_track->m_command.angular.z = - 0.2;
                 }
                 else if (arrow_direction == "up_right"){
                     people_track->m_command.linear.x =  0.05;
-                    people_track->m_command.angular.z = 0.2;
+                    people_track->m_command.angular.z = - 0.2;
                 }
                 else if (arrow_direction == "up_left"){
                     people_track->m_command.linear.x = 0.05;
-                    people_track->m_command.angular.z = - 0.2;
+                    people_track->m_command.angular.z = 0.2;
                 }
                 else if (arrow_direction == "down_right"){
                     people_track->m_command.linear.x =  - 0.05;
                     people_track->m_command.angular.z = 0.2;
                 }
-                else if (arrow_direction == "down_right"){
+                else if (arrow_direction == "down_left"){
                     people_track->m_command.linear.x = - 0.05;
-                    people_track->m_command.angular.z = - 0.2;
                 }
 
             people_track->m_command.linear.y = 0;
@@ -209,6 +208,9 @@ public:
         }
     }
 
+
+
+
 /////////////////////////////////////////////////////////////////
 /////////////////////    Autonomous control /////////////////////
 /////////////////////////////////////////////////////////////////
@@ -221,7 +223,10 @@ public:
          * else follow chosen target
          */
         std::cerr << "main loop  : " << m_remote_control_enabled << endl;
-        if (!m_remote_control_enabled){
+        if (m_remote_control_enabled){
+	    m_target_is_chosen = false; //
+        }
+	else{
             if (!m_target_is_chosen){
                 ROS_INFO_STREAM( "\n***** chosing target *****");
                 chose_target(msg);
@@ -238,6 +243,7 @@ public:
             }
             //redefine current state
             state_manager();
+
         }
     }
 
