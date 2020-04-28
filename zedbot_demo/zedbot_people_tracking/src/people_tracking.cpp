@@ -558,7 +558,9 @@ int main(int argc, char** argv) {
             std::chrono::steady_clock::time_point last_cmd_time = PeopleTrackingObject.get_last_remote_control_request();
             double elapsed_seconds_since_last_command = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - last_cmd_time).count();
             std::cerr << "elapsed time : " << elapsed_seconds_since_last_command << std::endl;
-            
+            elapsed_seconds_since_last_command /= 1000.0;
+            std::cerr << "elapsed time : " << elapsed_seconds_since_last_command << std::endl;
+
             if (elapsed_seconds_since_last_command >= efficiency_time_of_remote_command)
             {
                 std::cerr << "stop robot after :" << elapsed_seconds_since_last_command << "seconds" << endl;
