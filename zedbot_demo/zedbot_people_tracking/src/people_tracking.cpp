@@ -91,7 +91,7 @@ public:
         m_Kp_speed = 0.3;  
         m_Kp_angle = 2.0;
 
-        m_anglular_tolerance = 0.15; //if alignement <=0.2 rad, no correction (about 10 degree)
+        m_anglular_tolerance = 0.10; //if alignement <= 0.1 rad, no correction (about 10 degree)
         // Subscrber and publisher
         m_subObjList = m_nh.subscribe("/zed/zed_node/obj_det/objects", 1, &PeopleTracking::objectListCallback, this);
         m_cmd_vel_pub = m_nh.advertise<geometry_msgs::Twist>("/cmd_vel", 1000);

@@ -18,14 +18,14 @@
     <rosparam file="$(find zedbot_people_tracking)/params/move_base_params/global_costmap_params.yaml" command="load" />
 
     <!-- planners -->-->
-    <param name="base_local_planner" value="teb_local_planner/TebLocalPlannerROS" />
-    <param name="base_global_planner" value="global_planner/GlobalPlanner" />
-    <param name="TebLocalPlannerROS/max_vel_x" value="$(arg max_robot_speed)" />
-    <param name="TebLocalPlannerROS/acc_lim_x" value="0.02" />
-
     <rosparam file="$(find zedbot_people_tracking)/params/move_base_params/move_base_params.yaml" command="load" />
     <rosparam file="$(find zedbot_people_tracking)/params/move_base_params/global_planner_params_$(arg robot_model).yaml" command="load" />
     <rosparam file="$(find zedbot_people_tracking)/params/move_base_params/teb_local_planner_params_$(arg robot_model).yaml" command="load" />
+    
+    <param name="base_local_planner" value="teb_local_planner/TebLocalPlannerROS" />
+    <param name="base_global_planner" value="global_planner/GlobalPlanner" />
+    <param name="TebLocalPlannerROS/max_vel_x" value="$(arg max_robot_speed)" />
+    <param name="TebLocalPlannerROS/acc_lim_x" value="0.0001" />
     
     <!-- Remap -->-->
     <remap from="cmd_vel" to="$(arg cmd_vel_topic)"/>
