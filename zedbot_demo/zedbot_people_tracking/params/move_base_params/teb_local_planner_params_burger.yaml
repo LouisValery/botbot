@@ -56,7 +56,7 @@ TebLocalPlannerROS:
  penalty_epsilon: 0.01
  weight_max_vel_x: 5
  weight_max_vel_theta: 10
- weight_acc_lim_x: 5
+ weight_acc_lim_x: 40
  weight_acc_lim_theta: 10
  weight_kinematics_nh: 1000
  weight_kinematics_forward_drive: 10
