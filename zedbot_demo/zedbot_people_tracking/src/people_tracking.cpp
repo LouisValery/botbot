@@ -18,10 +18,21 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 
-/**
- * This tutorial demonstrates how to receive the list of detected objects from a ZED node
- * from the ZED node
- */
+/*************************************************************************************************************************
+ * People tracking node :
+ *
+ * The people tracking node call the class people tracking. Two modes are available:
+ * - The automatic mode is the default one. It uses the object detection topic provided
+ *   by the zed node to detect and follow a target. To follow a target a state machine is used to 
+ *   quantify the distance between the robot and its target. If the target is far, move_base is used to reach it.
+ *   If the target is close, a simple custom control is used.
+ *
+ * - The remote control mode can only be used with the dedicated interface (Qt). Using the IOT library and remote functions,  
+ *   RESt request are received by the People tracking node from the interface. 
+ *   They indicate which keyboard arrows have been pressed in the interface.
+ *   Some REST request also ask for data, that will be displayed in the interface.
+ ************************************************************************************************************************/
+
 #include <math.h>   //tanh, arctan
 #include <typeinfo>  //for 'typeid' to work
 
@@ -49,9 +60,6 @@ using namespace sl_iot;
 using namespace std;
 using json = sl_iot::json;
 
-/**
- * Subscriber callbacks. The argument of the callback is a constant pointer to the received message
- */
 
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 
@@ -69,28 +77,26 @@ public:
         m_target_is_lost_id = -1;
         m_distance_from_camera = -1;
         m_current_state = "UNKNOWN";
+        m_tolerance = 0.07;
         
-        //target choice param
-        m_nh.param("/people_tracking/min_detection_distance", m_min_detection_distance, 0.7);
-        m_nh.param("/people_tracking/max_detection_distance", m_max_detection_distance, 4.0);
+        //target detection param
+        m_min_detection_distance = 0.7;
+        m_max_detection_distance = 4.0;
 
         //target tracking param
-        m_nh.param("/people_tracking/tracking_with_move_base", m_tracking_with_move_base, true); //default true if param not found
-
-        m_nh.param("/people_tracking/target_robot_min_dist", m_target_robot_min_dist, 1.0);
-        m_nh.param("/people_tracking/max_robot_speed", m_max_robot_speed, 0.22);
+        m_tracking_with_move_base = true; 
+        m_target_robot_min_dist = 1.5; // robot stay at least m_target_robot_min_dist from target
+        m_max_robot_speed = 0.22;
 
         m_Kp_speed = 0.3;  
         m_Kp_angle = 2.0;
 
-        m_anglular_tolerance = 0.2; //if alignement <=0.2 rad, no correction (about 12 degree)
+        m_anglular_tolerance = 0.15; //if alignement <=0.2 rad, no correction (about 10 degree)
         // Subscrber and publisher
         m_subObjList = m_nh.subscribe("/zed/zed_node/obj_det/objects", 1, &PeopleTracking::objectListCallback, this);
         m_cmd_vel_pub = m_nh.advertise<geometry_msgs::Twist>("/cmd_vel", 1000);
 
-
         // IOT init
-
         //Init IoT with the SL_APPLICATION_TOKEN environment variable
         const char * application_token = ::getenv("SL_APPLICATION_TOKEN");
         STATUS_CODE status_iot = IoTCloud::init(application_token);
@@ -99,6 +105,7 @@ public:
             exit(EXIT_FAILURE);
         }    
 
+        // IOT callbacks
         CallbackParameters arrow_callback_params;
         arrow_callback_params.setRemoteCallback("arrow_direction_function", CALLBACK_TYPE::ON_REMOTE_CALL, this);
         IoTCloud::registerFunction(arrow_cmd_callback, arrow_callback_params);
@@ -110,7 +117,7 @@ public:
     }
     
 /////////////////////////////////////////////////////////////////        
-/////////////////     Remote control callback  //////////////////
+//                      Remote control                         //
 /////////////////////////////////////////////////////////////////
 
     static void arrow_cmd_callback(FunctionEvent& event) {
@@ -160,6 +167,8 @@ public:
                 }
                 else if (arrow_direction == "down_left"){
                     people_track->m_command.linear.x = - 0.05;
+                    people_track->m_command.angular.z = - 0.2;
+
                 }
 
             people_track->m_command.linear.y = 0;
@@ -208,11 +217,8 @@ public:
         }
     }
 
-
-
-
 /////////////////////////////////////////////////////////////////
-/////////////////////    Autonomous control /////////////////////
+//                       Automatic control                     //
 /////////////////////////////////////////////////////////////////
 
     void objectListCallback(const zed_interfaces::Objects::ConstPtr& msg) {
@@ -224,9 +230,9 @@ public:
          */
         std::cerr << "main loop  : " << m_remote_control_enabled << endl;
         if (m_remote_control_enabled){
-	    m_target_is_chosen = false; //
+	        m_target_is_chosen = false; //
         }
-	else{
+	    else{
             if (!m_target_is_chosen){
                 ROS_INFO_STREAM( "\n***** chosing target *****");
                 chose_target(msg);
@@ -243,15 +249,16 @@ public:
             }
             //redefine current state
             state_manager();
-
         }
     }
 
 
     void chose_target(const zed_interfaces::Objects::ConstPtr& msg){
+        
         /*
          *choose future target ID, based on ZED object detection
          */
+
         double distance_min = 100;
         double object_distance_from_camera;
         int target_array_index;
@@ -298,7 +305,7 @@ public:
 
                     if (m_current_state == "TOO_CLOSE_FROM_TARGET" || m_current_state == "DO_NOT_MOVE"){
                         //robot stop and keep target centered
-                        angular_tracking(alignement_angle);
+                        short_range_managment(alignement_angle);
                     }
 
                     else if (m_current_state == "FAR_FROM_TARGET"){
@@ -313,21 +320,22 @@ public:
                 }
                 //tracking_state== 0 : off (object not valid) or 3: terminate --> search a new target
                 else {
-		            ROS_INFO_STREAM("\n ********  Target lost. Reaching last known position  ***********");
-                    // target has been lost
-                    if (m_tracking_with_move_base){
-                        //reach last known position anyway
-                        m_action_client.waitForResult();
+		            // ROS_INFO_STREAM("\n ********  Target lost. Reaching last known position  ***********");
+                    // // target has been lost
+                    // if (m_tracking_with_move_base){
+                    //     //reach last known position anyway
+                    //     m_action_client.waitForResult();
                         
-                        if(m_action_client.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-                        {
-                            ROS_INFO("\nLast known position reached");
-                        }
-                        else
-                        {
-                            ROS_INFO("\nThe robot failed to reach last known position for some reason");
-                        }
-		            }
+                    //     if(m_action_client.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
+                    //     {
+                    //         ROS_INFO("\nLast known position reached");
+                    //     }
+                    //     else
+                    //     {
+                    //         ROS_INFO("\nThe robot failed to reach last known position for some reason");
+                    //     }
+		            // }
+                    m_action_client.cancelAllGoals();
 
                     ROS_INFO("\n**********    Target lost    *************");
                     m_command.linear.x = 0;
@@ -344,6 +352,7 @@ public:
             }
         }
     }
+    
     void track_with_move_base(const zed_interfaces::Objects::ConstPtr& msg, int object_index){
         /*
         * This function uses the person position to send a goal to move base
@@ -359,9 +368,12 @@ public:
         geometry_msgs::PoseStamped goal_map_frame;
         
         goal_robot_frame.header.frame_id = "base_footprint";
-        goal_robot_frame.pose.position.x = 0.80 * msg->objects[object_index].position.x;	//nearly reach target in order to give a free goal on the costmap to move base (target cell is obstacle)		
-        goal_robot_frame.pose.position.y = 0.80 * msg->objects[object_index].position.y;
+        goal_robot_frame.pose.position.x = 0.75 * msg->objects[object_index].position.x;	//nearly reach target in order to give a free goal on the costmap to move base (target cell is obstacle)		
+        goal_robot_frame.pose.position.y = 0.75 * msg->objects[object_index].position.y;
 
+
+        //final robot orientation must be // to robot_starting_pos/target pose direction
+        //could be improved by giving target speed direction as final robot orientation
         tf::Quaternion myQuaternion;
         myQuaternion.setRPY( 0, 0, atan(msg->objects[object_index].position.y / msg->objects[object_index].position.x));  // Create quaternion from roll/pitch/yaw (in radians)
         myQuaternion.normalize();
@@ -382,10 +394,10 @@ public:
         m_action_client.sendGoal(m_goal);
     }
 
-
-
     void track_with_basic_cmd(double const &alignement_angle){
         //compute command
+        // This function is used only if asked by the dedictaed parameter, by default, move base is preferd
+        // 
         ROS_INFO("trying to reach target");
         m_action_client.cancelAllGoals();
         m_command.linear.x = m_max_robot_speed * tanh(m_Kp_speed * m_distance_from_camera); 
@@ -395,7 +407,7 @@ public:
         m_cmd_vel_pub.publish(m_command);
     }
 
-    void angular_tracking(double const &alignement_angle){
+    void short_range_managment(double const &alignement_angle){
         /*
          * To close from target. 
          * Angular command to keep alignment on target
@@ -403,8 +415,8 @@ public:
          */
         ROS_INFO("****************    To close from target: rotation and move back    ***********");
         m_action_client.cancelAllGoals();
-        double tolerance = 0.10; // buffer used to avoid useless switch case between "too close" or not, due to noise
-        if (m_target_robot_min_dist - m_distance_from_camera - tolerance > 0){ //robot in range [0, 0.90]
+        double tolerance = 0.07; // buffer used to avoid useless switch case between "too close" or not, due to noise
+        if ((m_distance_from_camera + tolerance) < m_target_robot_min_dist){ //robot in range [0, 0.90]
             m_command.linear.x =  - m_max_robot_speed * tanh((m_target_robot_min_dist - m_distance_from_camera) * 3);
             m_command.angular.z= m_Kp_angle * alignement_angle;
         }
@@ -423,24 +435,6 @@ public:
     }
 
 
-    void info_display(const zed_interfaces::Objects::ConstPtr& msg){
-        for(int i=0; i<msg->objects.size();i++){
-            if(msg->objects[i].label_id == m_target_is_lost_id)
-                continue;
-
-            ROS_INFO_STREAM( msg->objects[i].label
-                    << " ["
-                    << msg->objects[i].label_id
-                    << "] - Pos. ["
-                    << msg->objects[i].position.x << ","
-                    << msg->objects[i].position.y << ","
-                    << msg->objects[i].position.z << "] [m]"
-                    << "- Conf. "
-                    << msg->objects[i].confidence
-                    << " - Tracking state: "
-                    << static_cast<int>(msg->objects[i].tracking_state) );
-        }
-    }
     bool value_is_in_range(float value, float range_min, float range_max){
         if (value <= range_max && value > range_min){
             return true;
@@ -450,7 +444,11 @@ public:
 
 
     void state_manager(){
-        double tolerance = 0.10;
+        /*
+        * chose state in [UNKNOWN, FAR_FROM_TARGET, DO_NOT_MOVE, TOO_CLOSE_FROM_TARGET]
+        * store value in m_current_state
+        */ 
+        double tolerance = 0.07;
         if (m_distance_from_camera == -1){
             m_current_state = "UNKNOWN";
         }
@@ -475,24 +473,20 @@ public:
     }
 
 /////////////////////////////////////////////////////////////////
-/////////////////////       Accessors       /////////////////////
+//                        Accessors                            //
 /////////////////////////////////////////////////////////////////
-
 
     bool get_remote_control_enabled() const{
         return m_remote_control_enabled;
     }	
 
-
     std::clock_t get_last_remote_control_request() const{
         return m_last_remote_control_request;
     }	
 
-
     ros::Publisher get_cmd_vel_pub() const{
         return m_cmd_vel_pub;
     }
-
 
 private:
 
@@ -513,6 +507,7 @@ private:
 
     // robot states based on distance from target
     std::string m_current_state;
+    double m_tolerance; //in m, tolerance between to states (avoid switch because of noise)
 
     //chose target 
     bool m_target_is_chosen;
@@ -520,22 +515,18 @@ private:
     int m_target_is_lost_id;
     double m_min_detection_distance; //in m
     double m_max_detection_distance; //in m
-    double m_distance_from_camera; //in m
+    double m_distance_from_camera;   //in m
 
     //reach target
     bool m_tracking_with_move_base;
     move_base_msgs::MoveBaseGoal m_goal;  
     geometry_msgs::Twist m_command;
     double m_anglular_tolerance;
-    double m_Kp_angle;              //proportianal coefficient for robot angle relative to target
-    double m_Kp_speed;              //proportianal coefficient for robot speed
+    double m_Kp_angle;              //proportianal coefficient for robot angle control relative to target
+    double m_Kp_speed;              //proportianal coefficient for robot speed control
     double m_target_robot_min_dist; //in m, define how close the robot is suppose to follow the target 
     double m_max_robot_speed;       
 };
-
-
-
-
 
 /*
  * Node main function
@@ -544,7 +535,7 @@ int main(int argc, char** argv) {
     ros::init(argc, argv, "zed_target_detection_object_detection");
     PeopleTracking PeopleTrackingObject;
     
-    ros::Rate loop_rate(2);
+    ros::Rate loop_rate(10);
     float efficiency_time_of_remote_command = 1; //1s
     geometry_msgs::Twist command;
     command.linear.x = 0;
@@ -555,24 +546,22 @@ int main(int argc, char** argv) {
     int count = 0;
     while (ros::ok())
     {
-        std::cerr << "enter while loop" << endl;
+        //If remote control enabled, cancel arrow cmd after efficiency_time_of_remote_command
         if (PeopleTrackingObject.get_remote_control_enabled())
         {
-            std::cerr << "remote control enabled" << endl;
-
             std::clock_t current_time = std::clock();
-            float elapsed_seconds_since_last_command = double(current_time - PeopleTrackingObject.get_last_remote_control_request())/CLOCKS_PER_SEC;
-            std::cerr << "elapsed time : " << elapsed_seconds_since_last_command  << endl;
-            if (elapsed_seconds_since_last_command >= efficiency_time_of_remote_command / 10)
+            double elapsed_seconds_since_last_command = std::chrono::duration<double, std::ratio<1, 1> >(current_time - PeopleTrackingObject.get_last_remote_control_request()).count();
+            std::cerr << "elapsed time : " << double(current_time - PeopleTrackingObject.get_last_remote_control_request())/CLOCKS_PER_SEC  << endl;
+            std::cerr << "elapsed time : " << std::chrono::duration<double, std::ratio<1, 1> >(current_time - PeopleTrackingObject.get_last_remote_control_request()).count()  << endl;
+            if (elapsed_seconds_since_last_command >= efficiency_time_of_remote_command / 1)
             {
-                std::cerr << "stop robot" << endl;
+                std::cerr << "stop robot after :" << elapsed_seconds_since_last_command << "seconds" << endl;
                 cmd_publisher.publish(command); 
             }
         }
         ros::spinOnce();
         loop_rate.sleep();
     }
-
 
     ros::spin();
     return 0;
