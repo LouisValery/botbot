@@ -127,7 +127,7 @@ public:
         PeopleTracking* people_track = (PeopleTracking*) event.payload;
 
         // get current time
-        people_track->m_last_remote_control_request = std::clock();
+        people_track->m_last_remote_control_request = std::chrono::steady_clock::now();
 
 
         if (params.find("arrow_direction") != params.end() && params["arrow_direction"].is_string()) {
@@ -480,7 +480,7 @@ public:
         return m_remote_control_enabled;
     }	
 
-    std::clock_t get_last_remote_control_request() const{
+    std::chrono::steady_clock::time_point get_last_remote_control_request() const{
         return m_last_remote_control_request;
     }	
 
@@ -500,7 +500,7 @@ private:
 /////////////////    Remote control  ////////////////
     // Remote control
     bool m_remote_control_enabled;
-    std::clock_t m_last_remote_control_request;
+    std::chrono::steady_clock::time_point m_last_remote_control_request;
 
 
 ////////////////    Automatic people tracking  ///////////////
@@ -549,11 +549,16 @@ int main(int argc, char** argv) {
         //If remote control enabled, cancel arrow cmd after efficiency_time_of_remote_command
         if (PeopleTrackingObject.get_remote_control_enabled())
         {
-            std::clock_t current_time = std::clock();
-            double elapsed_seconds_since_last_command = std::chrono::duration<double, std::ratio<1, 1> >(current_time - PeopleTrackingObject.get_last_remote_control_request()).count();
-            std::cerr << "elapsed time : " << double(current_time - PeopleTrackingObject.get_last_remote_control_request())/CLOCKS_PER_SEC  << endl;
-            std::cerr << "elapsed time : " << std::chrono::duration<double, std::ratio<1, 1> >(current_time - PeopleTrackingObject.get_last_remote_control_request()).count()  << endl;
-            if (elapsed_seconds_since_last_command >= efficiency_time_of_remote_command / 1)
+            // std::clock_t current_time = std::clock();
+            // double elapsed_seconds_since_last_command = std::chrono::duration<double, std::ratio<1, 1> >(current_time - PeopleTrackingObject.get_last_remote_control_request()).count();
+            // std::cerr << "elapsed time : " << double(current_time - PeopleTrackingObject.get_last_remote_control_request())/CLOCKS_PER_SEC  << endl;
+            // std::cerr << "elapsed time : " << std::chrono::duration<double, std::ratio<1, 1> >(current_time - PeopleTrackingObject.get_last_remote_control_request()).count()  << endl;
+            
+            std::chrono::steady_clock::time_point current_time = std::chrono::steady_clock::now();
+            double elapsed_seconds_since_last_command = 1/1000 * std::chrono::duration_cast<std::chrono::milliseconds>(current_time - PeopleTrackingObject.get_last_remote_control_request()).count();
+            std::cerr << "elapsed time : " << elapsed_seconds_since_last_command << std::endl;
+            
+            if (elapsed_seconds_since_last_command >= efficiency_time_of_remote_command)
             {
                 std::cerr << "stop robot after :" << elapsed_seconds_since_last_command << "seconds" << endl;
                 cmd_publisher.publish(command); 
