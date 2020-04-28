@@ -555,7 +555,8 @@ int main(int argc, char** argv) {
             // std::cerr << "elapsed time : " << std::chrono::duration<double, std::ratio<1, 1> >(current_time - PeopleTrackingObject.get_last_remote_control_request()).count()  << endl;
             
             std::chrono::steady_clock::time_point current_time = std::chrono::steady_clock::now();
-            double elapsed_seconds_since_last_command = 1/1000 * std::chrono::duration_cast<std::chrono::milliseconds>(current_time - PeopleTrackingObject.get_last_remote_control_request()).count();
+            std::chrono::steady_clock::time_point last_cmd_time = PeopleTrackingObject.get_last_remote_control_request();
+            double elapsed_seconds_since_last_command = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - last_cmd_time).count();
             std::cerr << "elapsed time : " << elapsed_seconds_since_last_command << std::endl;
             
             if (elapsed_seconds_since_last_command >= efficiency_time_of_remote_command)
