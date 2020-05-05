@@ -44,7 +44,7 @@
 
 #include <zed_interfaces/ObjectStamped.h>
 #include <zed_interfaces/Objects.h>
-#include <zed_nodelet/zed_wrapper_nodelet.hpp>
+#include <zed_nodelets/zed_wrapper_nodelet.hpp>
 
 #include <tf2/LinearMath/Quaternion.h>
 #include <move_base_msgs/MoveBaseAction.h>
