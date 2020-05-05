@@ -14,7 +14,7 @@ TebLocalPlannerROS:
     
  # Robot
          
- max_vel_x: 0.05
+ max_vel_x: 0.22
  max_vel_x_backwards: 0.02
  max_vel_theta: 0.3
  acc_lim_x: 0.03
@@ -24,13 +24,6 @@ TebLocalPlannerROS:
  footprint_model: # types: "point", "circular", "two_circles", "line", "polygon"
    type: "circular"
    radius: 0.1 # for type "circular"
-  #  line_start: [-0.3, 0.0] # for type "line"
-  #  line_end: [0.3, 0.0] # for type "line"
-  #  front_offset: 0.2 # for type "two_circles"
-  #  front_radius: 0.2 # for type "two_circles"
-  #  rear_offset: 0.2 # for type "two_circles"
-  #  rear_radius: 0.2 # for type "two_circles"
-  #  vertices: [ [0.25, -0.05], [0.18, -0.05], [0.18, -0.18], [-0.19, -0.18], [-0.25, 0], [-0.19, 0.18], [0.18, 0.18], [0.18, 0.05], [0.25, 0.05] ] # for type "polygon"
 
  # GoalTolerance
     
@@ -56,13 +49,13 @@ TebLocalPlannerROS:
  optimization_verbose: False
  penalty_epsilon: 0.01
  weight_max_vel_x: 5
- weight_max_vel_theta: 10
- weight_acc_lim_x: 40
+ weight_max_vel_theta: 5
+ weight_acc_lim_x: 300
  weight_acc_lim_theta: 10
  weight_kinematics_nh: 1000
  weight_kinematics_forward_drive: 10
  weight_kinematics_turning_radius: 1
- weight_optimaltime: 5
+ weight_optimaltime: 1
  weight_obstacle: 50
  weight_dynamic_obstacle: 10 # not in use yet
  alternative_time_cost: False # not in use yet

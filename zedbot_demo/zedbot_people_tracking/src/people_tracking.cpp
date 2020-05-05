@@ -44,6 +44,7 @@
 
 #include <zed_interfaces/ObjectStamped.h>
 #include <zed_interfaces/Objects.h>
+#include <zed_nodelet/zed_wrapper_nodelet.hpp>
 
 #include <tf2/LinearMath/Quaternion.h>
 #include <move_base_msgs/MoveBaseAction.h>
@@ -70,7 +71,8 @@ public:
     {
         //remote control 
         m_remote_control_enabled = false;
-	    
+	    m_streaming_client = m_nh.serviceClient<zed_interfaces::start_remote_stream>("start_remote_stream");
+
         //target status param
         m_target_is_chosen = false; 
         m_target_id = -1;
@@ -81,11 +83,11 @@ public:
         
         //target detection param
         m_min_detection_distance = 0.7;
-        m_max_detection_distance = 4.0;
+        m_max_detection_distance = 6.0;
 
         //target tracking param
         m_tracking_with_move_base = true; 
-        m_target_robot_min_dist = 1.5; // robot stay at least m_target_robot_min_dist from target
+        m_target_robot_min_dist = 1.2; // robot stay at least m_target_robot_min_dist from target
         m_max_robot_speed = 0.22;
 
         m_Kp_speed = 0.3;  
@@ -292,7 +294,7 @@ public:
         bool target_still_found = false;
 
         for(int i=0; i<msg->objects.size();i++){
-            //person of interest
+            //person of interest detected
             if (msg->objects[i].label_id == m_target_id){
                 //tracking_state== 1 : ok , tracking_state== 1 : searching (occlusion occured)
                 if (msg->objects[i].tracking_state == 1 || msg->objects[i].tracking_state == 1){
@@ -320,21 +322,6 @@ public:
                 }
                 //tracking_state== 0 : off (object not valid) or 3: terminate --> search a new target
                 else {
-		            // ROS_INFO_STREAM("\n ********  Target lost. Reaching last known position  ***********");
-                    // // target has been lost
-                    // if (m_tracking_with_move_base){
-                    //     //reach last known position anyway
-                    //     m_action_client.waitForResult();
-                        
-                    //     if(m_action_client.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-                    //     {
-                    //         ROS_INFO("\nLast known position reached");
-                    //     }
-                    //     else
-                    //     {
-                    //         ROS_INFO("\nThe robot failed to reach last known position for some reason");
-                    //     }
-		            // }
                     m_action_client.cancelAllGoals();
 
                     ROS_INFO("\n**********    Target lost    *************");
@@ -347,7 +334,6 @@ public:
                     m_target_is_chosen = false;
                     m_target_id = m_target_is_lost_id;
                     m_distance_from_camera = -1;
-
                 }
             }
         }
@@ -501,6 +487,7 @@ private:
     // Remote control
     bool m_remote_control_enabled;
     std::chrono::steady_clock::time_point m_last_remote_control_request;
+    ros::ServiceClient m_streaming_client; 
 
 
 ////////////////    Automatic people tracking  ///////////////
@@ -525,7 +512,8 @@ private:
     double m_Kp_angle;              //proportianal coefficient for robot angle control relative to target
     double m_Kp_speed;              //proportianal coefficient for robot speed control
     double m_target_robot_min_dist; //in m, define how close the robot is suppose to follow the target 
-    double m_max_robot_speed;       
+    double m_max_robot_speed;
+
 };
 
 /*
