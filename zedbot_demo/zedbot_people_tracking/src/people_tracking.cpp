@@ -206,8 +206,22 @@ public:
             people_track->m_command.linear.y = 0;
             people_track->m_command.angular.z = 0;
             people_track->m_cmd_vel_pub.publish(people_track->m_command);
-          
             
+            // starting remote control, starts streaming service for the interface
+            if (people_track->m_remote_control_enabled){
+                zed_interfaces::start_remote_stream srv;
+                if (people_track->m_streaming_client.call(srv))
+                {
+                    ROS_INFO("SUCCESS: streaming service started");
+                }
+                else
+                {
+                    ROS_ERROR("Failed to call service /zed2/zed_node/start_remote_stream");
+                }
+            }
+            else {
+                //stop streaming
+            }
             //Update the result and status of the event
             event.status = 0;
             event.result = people_track->m_remote_control_enabled;
