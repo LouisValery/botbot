@@ -44,7 +44,7 @@
 
 #include <zed_interfaces/ObjectStamped.h>
 #include <zed_interfaces/Objects.h>
-#include <zed_nodelets/zed_wrapper_nodelet.hpp>
+#include <zed_interfaces/start_remote_stream.h>
 
 #include <tf2/LinearMath/Quaternion.h>
 #include <move_base_msgs/MoveBaseAction.h>
@@ -71,7 +71,7 @@ public:
     {
         //remote control 
         m_remote_control_enabled = false;
-	    m_streaming_client = m_nh.serviceClient<zed_interfaces::start_remote_stream>("start_remote_stream");
+	    m_streaming_client = m_nh.serviceClient<zed_interfaces::start_remote_stream>("/zed2/zed_node/start_remote_stream");
 
         //target status param
         m_target_is_chosen = false; 
