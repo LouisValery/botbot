@@ -198,7 +198,6 @@ public:
         if (params.find("remote_control_signal") != params.end() && params["remote_control_signal"].is_boolean()) {
 
             people_track->m_remote_control_enabled = params["remote_control_signal"].get<bool>();
-            std::cerr << "inside callback  : " << people_track->m_remote_control_enabled << endl;
             
             //Stop all the current actions (when remote control is unable and when disabled)
             people_track->m_action_client.cancelAllGoals();
@@ -209,6 +208,11 @@ public:
             
             // starting remote control, starts streaming service for the interface
             if (people_track->m_remote_control_enabled){
+                std::cerr << "Trying to start streaming" << std::endl;
+
+                ros::service::waitForService("/zed2/zed_node/start_remote_stream");
+                std::cerr << "Service available" << std::endl;
+
                 zed_interfaces::start_remote_stream srv;
                 if (people_track->m_streaming_client.call(srv))
                 {
@@ -559,9 +563,7 @@ int main(int argc, char** argv) {
             std::chrono::steady_clock::time_point current_time = std::chrono::steady_clock::now();
             std::chrono::steady_clock::time_point last_cmd_time = PeopleTrackingObject.get_last_remote_control_request();
             double elapsed_seconds_since_last_command = std::chrono::duration_cast<std::chrono::milliseconds>(current_time - last_cmd_time).count();
-            std::cerr << "elapsed time : " << elapsed_seconds_since_last_command << std::endl;
             elapsed_seconds_since_last_command /= 1000.0;
-            std::cerr << "elapsed time : " << elapsed_seconds_since_last_command << std::endl;
 
             if (elapsed_seconds_since_last_command >= efficiency_time_of_remote_command)
             {
