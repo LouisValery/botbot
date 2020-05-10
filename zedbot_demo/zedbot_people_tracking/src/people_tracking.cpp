@@ -566,7 +566,7 @@ int main(int argc, char** argv) {
 
             if (elapsed_seconds_since_last_command >= efficiency_time_of_remote_command)
             {
-                std::cerr << "stop robot after :" << elapsed_seconds_since_last_command << "seconds" << endl;
+                //std::cerr << "stop robot after :" << elapsed_seconds_since_last_command << "seconds" << endl;
                 cmd_publisher.publish(command); 
             }
         }
