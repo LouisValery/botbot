@@ -193,7 +193,7 @@ public:
         //Get the parameters of the remote function call
         sl_iot::json params = event.getInputParameters();
         PeopleTracking* people_track = (PeopleTracking*) event.payload;
-        
+        std::cerr << "remote callback button pressed" << std::endl;
         //Check if parameters are present and valid
         if (params.find("remote_control_signal") != params.end() && params["remote_control_signal"].is_boolean()) {
 
@@ -248,7 +248,6 @@ public:
          * if target not already chosen, chose it and (if chosen, follow it)  ;
          * else follow chosen target
          */
-        std::cerr << "main loop  : " << m_remote_control_enabled << endl;
         if (m_remote_control_enabled){
 	        m_target_is_chosen = false; //
         }
